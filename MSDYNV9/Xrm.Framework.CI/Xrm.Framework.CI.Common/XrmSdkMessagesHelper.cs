@@ -2,6 +2,7 @@ using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+using System;
 
 namespace Xrm.Framework.CI.Common
 {
@@ -15,6 +16,24 @@ namespace Xrm.Framework.CI.Common
             LogicalName = logicalname,
             EntityFilters = EntityFilters.Entity
         })).EntityMetadata;
+
+        /// <summary>
+        /// Get entity by metadataId - you can use solutioncomponent.objectid for componenttype=1 (entity) to retrieve entity metadata.
+        /// </summary>
+        /// <param name="service"></param>
+        /// <param name="metadataId"></param>
+        /// <returns></returns>
+        public static EntityMetadata GetEntityMetadata(this IOrganizationService service, Guid metadataId) => ((RetrieveEntityResponse)service.Execute(new RetrieveEntityRequest
+        {
+            MetadataId = metadataId,
+            EntityFilters = EntityFilters.Entity
+        })).EntityMetadata;
+
+        public static RelationshipMetadataBase GetRelationshipMetadata(this IOrganizationService service, Guid metadataId) => ((RetrieveRelationshipResponse)service.Execute(new RetrieveRelationshipRequest()
+        {
+            MetadataId = metadataId,
+            RetrieveAsIfPublished = false
+        })).RelationshipMetadata;
 
         public static void ProvisionLanguage(this IOrganizationService service, int language) => service.Execute(new ProvisionLanguageRequest
         {

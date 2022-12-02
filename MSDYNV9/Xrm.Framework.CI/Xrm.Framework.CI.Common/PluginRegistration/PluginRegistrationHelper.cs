@@ -9,8 +9,10 @@ using Xrm.Framework.CI.Common.Entities;
 using System.Xml.Linq;
 using System.Xml;
 using System.Xml.XPath;
-
+using Xrm.Framework.CI.Common.Logging;
 using Xrm.Framework.CI.Common;
+using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Metadata;
 
 namespace Xrm.Framework.CI.Common
 {
@@ -22,21 +24,26 @@ namespace Xrm.Framework.CI.Common
         private readonly Action<string> logWarning;
         private readonly IReflectionLoader reflectionLoader;
         private readonly IPluginRegistrationObjectFactory pluginRegistrationObjectFactory;
+        private readonly ILogger Logger;
+        private readonly SolutionComponentsManager SolutionComponentsManager;
 
         public PluginRegistrationHelper(IOrganizationService service, CIContext xrmContext, Action<string> logVerbose, Action<string> logWarning)
         {
             this.logVerbose = logVerbose;
             this.logWarning = logWarning;
+            this.Logger = new DelegateLogger(logError: null, logWarning: logWarning, logInformation: null, logVerbose: logVerbose);
             organizationService = service;
             pluginRepository = new PluginRepository(xrmContext);
             reflectionLoader = new ReflectionLoader();
             pluginRegistrationObjectFactory = new PluginRegistrationObjectFactory();
+            SolutionComponentsManager = new SolutionComponentsManager(Logger, this.organizationService);
         }
 
         public PluginRegistrationHelper(Action<string> logVerbose, Action<string> logWarning)
         {
             this.logVerbose = logVerbose;
             this.logWarning = logWarning;
+            this.Logger = new DelegateLogger(logError: null, logWarning: logWarning, logInformation: null, logVerbose: logVerbose);
             reflectionLoader = new ReflectionLoader();
             pluginRegistrationObjectFactory = new PluginRegistrationObjectFactory();
         }
@@ -46,8 +53,10 @@ namespace Xrm.Framework.CI.Common
         {
             this.logVerbose = logVerbose;
             this.logWarning = logWarning;
+            this.Logger = new DelegateLogger(logError: null, logWarning: logWarning, logInformation: null, logVerbose: logVerbose);
             this.reflectionLoader = reflectionLoader;
             this.pluginRegistrationObjectFactory = pluginRegistrationObjectFactory;
+            SolutionComponentsManager = new SolutionComponentsManager(Logger, this.organizationService);
         }
 
         public Assembly GetAssemblyRegistration(string assemblyName, string version) => pluginRepository.GetAssemblyRegistration(assemblyName, version);
@@ -79,110 +88,16 @@ namespace Xrm.Framework.CI.Common
             var typesInMapping = new HashSet<string>(assemblyMapping.PluginTypes.Select(t => t.Name));
             var pluginTypesToDelete = assemblyInCrm.PluginTypes
                 .Where(t => !typesInMapping.Contains(t.Name))
-                .ToList();
+                .ToList();      
             foreach (var pluginType in pluginTypesToDelete)
             {
                 logVerbose?.Invoke($"Trying to delete type {pluginType.Id} / {pluginType.Name}");
-                DeleteObjectWithDependencies(pluginType.Id.Value, ComponentType.PluginType);
+                SolutionComponentsManager.DeleteObjectWithDependencies(pluginType.Id.Value, ComponentType.PluginType);
             }
         }
 
-        public void DeleteObjectWithDependencies(Guid objectId, ComponentType? componentType, HashSet<string> deletingHashSet = null)
-        {
-            if (deletingHashSet == null)
-            {
-                deletingHashSet = new HashSet<string>();
-            }
-            var objectkey = $"{componentType}{objectId}";
-            if (deletingHashSet.Contains(objectkey))
-            {
-                return;
-            }
-            deletingHashSet.Add(objectkey);
-
-            logVerbose?.Invoke($"Checking dependencies for {componentType} / {objectId}");
-            foreach (var objectToDelete in GetDependeciesForDelete(objectId, componentType))
-            {
-                DeleteObjectWithDependencies(objectToDelete.DependentComponentObjectId.Value, objectToDelete.DependentComponentTypeEnum, deletingHashSet);
-            }
-
-            switch (componentType)
-            {
-                case ComponentType.Workflow:
-                    var workflow = pluginRepository.GetWorkflowById(objectId);
-                    if (workflow.StateCode == WorkflowState.Activated)
-                    {
-                        logVerbose?.Invoke($"Unpublishing workflow {workflow.Name}");
-                        organizationService.Execute(new SetStateRequest
-                        {
-                            EntityMoniker = workflow.ToEntityReference(),
-                            State = new OptionSetValue((int)WorkflowState.Draft),
-                            Status = new OptionSetValue((int)Workflow_StatusCode.Draft)
-                        });
-                    }
-                    if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
-                    {
-                        var entityMetadata = organizationService.GetEntityMetadata(workflow.UniqueName);
-                        logVerbose?.Invoke($"Checking dependencies for BPF entity: {workflow.UniqueName}");
-                        DeleteObjectWithDependencies(entityMetadata.MetadataId.Value, ComponentType.Entity, deletingHashSet);
-                    }
-
-                    if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
-                    {
-                        RemoveAllWorkflowsFromBpf(workflow);
-                        logVerbose?.Invoke($"Preserving BPF {workflow.Name}");
-                        return;
-                    }
-
-                    logVerbose?.Invoke($"Trying to delete {componentType} {workflow.Name}");
-                    organizationService.Delete(Workflow.EntityLogicalName, objectId);
-                    break;
-                case ComponentType.SDKMessageProcessingStep:
-                    var step = pluginRepository.GetSdkMessageProcessingStepById(objectId);
-                    if (step.IsHidden.Value == true)
-                    {
-                        logVerbose?.Invoke($"Preserving hidden SdkMessageProcessingStep {step.Name}");
-                        return;
-                    }
-                    logVerbose?.Invoke($"Trying to delete {componentType} {step.Name} / {objectId}");
-                    organizationService.Delete(SdkMessageProcessingStep.EntityLogicalName, objectId);
-                    break;
-                case ComponentType.PluginType:
-                    var type = pluginRepository.GetPluginTypeById(objectId);
-                    logVerbose?.Invoke($"Trying to delete {componentType} {type.Name} / {objectId}");
-                    organizationService.Delete(PluginType.EntityLogicalName, objectId);
-                    break;
-                case ComponentType.PluginAssembly:
-                    logVerbose?.Invoke($"Trying to delete {componentType} {objectId}");
-                    organizationService.Delete(PluginAssembly.EntityLogicalName, objectId);
-                    break;
-                case ComponentType.ServiceEndpoint:
-                    logVerbose?.Invoke($"Trying to delete {componentType} {objectId}");
-                    organizationService.Delete(ServiceEndpoint.EntityLogicalName, objectId);
-                    break;
-            }
-        }
-
-        private const string ActionComposieClassWithAssemblyQualifiedName = "Microsoft.Crm.Workflow.Activities.ActionComposite, Microsoft.Crm.Workflow, Version=8.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
-        private const string mxswaNamespace = "clr-namespace:Microsoft.Xrm.Sdk.Workflow.Activities;assembly=Microsoft.Xrm.Sdk.Workflow, Version=8.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
-
-        private void RemoveAllWorkflowsFromBpf(Workflow bpf)
-        {
-            var xaml = XDocument.Parse(bpf.Xaml);
-            var nsmgr = new XmlNamespaceManager(new NameTable());
-            nsmgr.AddNamespace("mxswa", mxswaNamespace);
-            var actionsElements = xaml.XPathSelectElements($"//mxswa:ActivityReference[@AssemblyQualifiedName='{ActionComposieClassWithAssemblyQualifiedName}']", nsmgr).ToList();
-            foreach (var element in actionsElements)
-            {
-                element.Remove();
-            }
-            organizationService.Update(new Workflow
-            {
-                Xaml = xaml.ToString(SaveOptions.DisableFormatting),
-                Id = bpf.Id
-            });
-        }
-
+        //Leaving this method within PluginRegistrationHelper, because the interface was public, thus not to break any dependant assemblies.
+        public void DeleteObjectWithDependencies(Guid objectId, ComponentType? componentType, HashSet<string> deletingHashSet = null) => SolutionComponentsManager.DeleteObjectWithDependencies(objectId, componentType, deletingHashSet);
         public Guid UpsertPluginAssembly(Assembly pluginAssembly, AssemblyInfo assemblyInfo, string solutionName, RegistrationTypeEnum registrationType)
         {
             Guid Id = pluginAssembly?.Id ?? Guid.Empty;
@@ -209,13 +124,13 @@ namespace Xrm.Framework.CI.Common
 
             if (!Id.Equals(Guid.Empty) && registrationType == RegistrationTypeEnum.Reset)
             {
-                DeleteObjectWithDependencies(Id, ComponentType.PluginAssembly);
+                SolutionComponentsManager.DeleteObjectWithDependencies(Id, ComponentType.PluginAssembly);
             }
 
             logVerbose?.Invoke($"Trying to upsert {assemblyInfo.AssemblyName} / {Id}");
             Id = ExecuteRequest(registrationType, Id, assembly);
 
-            AddComponentToSolution(Id, ComponentType.PluginAssembly, solutionName);
+            SolutionComponentsManager.AddComponentToSolution(Id, ComponentType.PluginAssembly, solutionName);
 
             return Id;
         }
@@ -330,13 +245,13 @@ namespace Xrm.Framework.CI.Common
 
             if (!Id.Equals(Guid.Empty) && registrationType == RegistrationTypeEnum.Reset)
             {
-                DeleteObjectWithDependencies(Id, ComponentType.ServiceEndpoint);
+                SolutionComponentsManager.DeleteObjectWithDependencies(Id, ComponentType.ServiceEndpoint);
             }
 
             logVerbose?.Invoke($"Trying to upsert {serviceEndpt.Name} / {Id}");
             Id = ExecuteRequest(registrationType, Id, serviceEndpoint);
 
-            AddComponentToSolution(Id, ComponentType.ServiceEndpoint, solutionName);
+            SolutionComponentsManager.AddComponentToSolution(Id, ComponentType.ServiceEndpoint, solutionName);
 
             return Id;
         }
@@ -378,7 +293,7 @@ namespace Xrm.Framework.CI.Common
                 Status = new OptionSetValue(stateCode + 1)
             });
 
-            AddComponentToSolution(Id, ComponentType.SDKMessageProcessingStep, solutionName);
+            SolutionComponentsManager.AddComponentToSolution(Id, ComponentType.SDKMessageProcessingStep, solutionName);
             return Id;
         }
 
@@ -437,28 +352,7 @@ namespace Xrm.Framework.CI.Common
             return Id;
         }
 
-        private void AddComponentToSolution(Guid componentId, ComponentType componentType, string solutionName)
-        {
-            if (string.IsNullOrEmpty(solutionName))
-            {
-                return;
-            }
-
-            logVerbose?.Invoke($"Adding {componentType} {componentId} to solution {solutionName}");
-            organizationService.Execute(new AddSolutionComponentRequest
-            {
-                AddRequiredComponents = false,
-                ComponentId = componentId,
-                ComponentType = (int)componentType,
-                SolutionUniqueName = solutionName
-            });
-        }
-
-        private IEnumerable<Dependency> GetDependeciesForDelete(Guid objectId, ComponentType? componentType) => ((RetrieveDependenciesForDeleteResponse)organizationService.Execute(new RetrieveDependenciesForDeleteRequest()
-        {
-            ComponentType = (int)componentType,
-            ObjectId = objectId
-        })).EntityCollection.Entities.Select(x => x.ToEntity<Dependency>());
+        
 
         public object GetPluginRegistrationObject(string assemblyPath, string customAttributeClass)
         {
