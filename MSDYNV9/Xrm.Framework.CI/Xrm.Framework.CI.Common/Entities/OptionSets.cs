@@ -803,7 +803,57 @@ namespace Xrm.Framework.CI.Common.Entities
 		[OptionSetMetadataAttribute("Inactive", 1)]
 		Inactive = 2,
 	}
-	
+
+	[System.Runtime.Serialization.DataContractAttribute()]
+	public enum ConnectionRole_Category
+	{
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Business", 0)]
+		Business = 1,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Family", 1)]
+		Family = 2,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Other", 4)]
+		Other = 5,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Sales", 3)]
+		Sales = 4,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Sales Team", 6)]
+		SalesTeam = 1001,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Service", 7)]
+		Service = 1002,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Social", 2)]
+		Social = 3,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Stakeholder", 5)]
+		Stakeholder = 1000,
+	}
+
+	[System.Runtime.Serialization.DataContractAttribute()]
+	public enum ConnectionRole_StatusCode
+	{
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Active", 0)]
+		Active = 1,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Inactive", 1)]
+		Inactive = 2,
+	}
+
 	[System.Runtime.Serialization.DataContractAttribute()]
 	[System.CodeDom.Compiler.GeneratedCodeAttribute("CrmSvcUtil", "9.1.0.45")]
 	public enum DependencyType
@@ -6629,7 +6679,21 @@ namespace Xrm.Framework.CI.Common.Entities
 		[OptionSetMetadataAttribute("Normal", 2)]
 		Normal = 2,
 	}
-	
+
+
+	[System.Runtime.Serialization.DataContractAttribute()]
+	public enum SavedQuery_StatusCode
+	{
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Active", 0)]
+		Active = 1,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		[OptionSetMetadataAttribute("Inactive", 1)]
+		Inactive = 2,
+	}
+
 	[System.Runtime.Serialization.DataContractAttribute()]
 	[System.CodeDom.Compiler.GeneratedCodeAttribute("CrmSvcUtil", "9.1.0.45")]
 	public enum SdkMessageProcessingStep_InvocationSource

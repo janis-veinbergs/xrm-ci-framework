@@ -43,6 +43,13 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         [Parameter(ParameterSetName = RemoveParameterSetName, ValueFromPipeline = true, Mandatory = false)]
         [Parameter(ParameterSetName = DeleteParameterSetName, ValueFromPipeline = true, Mandatory = true)]
         public SolutionComponent SolutionComponent { get; set; }
+
+        /// <summary>
+        /// Only will process unmanaged components. That is, managed ones will be skipped.
+        /// </summary>
+        [Parameter(ParameterSetName = RemoveParameterSetName, Mandatory = false)]
+        [Parameter(ParameterSetName = DeleteParameterSetName, Mandatory = false)]
+        public SwitchParameter Unmanaged { get; set; }
         #endregion
 
         SolutionComponentsManager SolutionComponentsManager;
@@ -64,7 +71,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             {
                 if (Delete.IsPresent)
                 {
-                    ProcessDelete(SolutionComponent.ObjectId.Value, SolutionComponent.ComponentType, context);
+                    ProcessDelete(SolutionComponent.ObjectId.Value, SolutionComponent.ComponentType);
                 } else
                 {
                     Guid solutionId = GetSolutionId(context);
@@ -112,7 +119,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             return solutionId;
         }
 
-        void ProcessDelete(Guid componentId, OptionSetValue componentType, CIContext context)
+        void ProcessDelete(Guid componentId, OptionSetValue componentType)
         {
             if (!Delete.IsPresent) { throw new InvalidOperationException($"{nameof(ProcessDelete)} not callable without {nameof(Delete)} switch parameter set"); }
             var componentTypeEnum = (ComponentType)componentType.Value;

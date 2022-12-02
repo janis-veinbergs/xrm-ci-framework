@@ -1,6 +1,7 @@
 ﻿using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,7 +32,9 @@ namespace Xrm.Framework.CI.Common
             get;
             set;
         }
-        
+
+        readonly PluginRepository pluginRepository;
+        readonly SolutionManagementRepository solutionManagementRepository;
         readonly CIContext context;
         #endregion
 
@@ -42,6 +45,8 @@ namespace Xrm.Framework.CI.Common
             : base(logger, organizationService)
         {
             context = new CIContext(OrganizationService);
+            pluginRepository = new PluginRepository(context);
+            solutionManagementRepository = new SolutionManagementRepository(context);
         }
 
         #endregion
@@ -110,16 +115,11 @@ namespace Xrm.Framework.CI.Common
             return response.EntityCollection;
         }
 
-        PluginRepository pluginRepository = null;
         public void DeleteObjectWithDependencies(Guid objectId, ComponentType? componentType, HashSet<string> deletingHashSet = null)
         {
             if (deletingHashSet == null)
             {
                 deletingHashSet = new HashSet<string>();
-            }
-            if (pluginRepository == null)
-            {
-                pluginRepository = new PluginRepository(context);
             }
             var objectkey = $"{componentType}{objectId}";
             if (deletingHashSet.Contains(objectkey))
@@ -136,40 +136,15 @@ namespace Xrm.Framework.CI.Common
 
             switch (componentType)
             {
+                case ComponentType.ConnectionRole:
+                    var connectionRole = solutionManagementRepository.GetEntityById<ConnectionRole>(objectId);
+                    Logger.LogVerbose($"Deleting {nameof(componentType)} {connectionRole.Name} {objectId}");
+                    OrganizationService.Delete(ConnectionRole.EntityLogicalName, objectId);
+                    break;
                 case ComponentType.Entity:
                     var entityMetadata1 = OrganizationService.GetEntityMetadata(objectId);
                     Logger.LogVerbose($"Trying to delete {componentType} {entityMetadata1.LogicalName} {objectId}");
-                    var deleterequest = new DeleteEntityRequest { LogicalName = entityMetadata1.LogicalName };
-                    OrganizationService.Execute(deleterequest);
-                    break;
-                case ComponentType.Workflow:
-                    var workflow = GetWorkflowById(objectId);
-                    if (workflow.StateCode == WorkflowState.Activated)
-                    {
-                        Logger.LogVerbose($"Unpublishing workflow {workflow.Name}");
-                        OrganizationService.Execute(new SetStateRequest
-                        {
-                            EntityMoniker = workflow.ToEntityReference(),
-                            State = new OptionSetValue((int)WorkflowState.Draft),
-                            Status = new OptionSetValue((int)Workflow_StatusCode.Draft)
-                        });
-                    }
-                    if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
-                    {
-                        var entityMetadata2 = OrganizationService.GetEntityMetadata(workflow.UniqueName);
-                        Logger.LogVerbose($"Checking dependencies for BPF entity: {workflow.UniqueName}");
-                        DeleteObjectWithDependencies(entityMetadata2.MetadataId.Value, ComponentType.Entity, deletingHashSet);
-                    }
-
-                    if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
-                    {
-                        RemoveAllWorkflowsFromBpf(workflow);
-                        Logger.LogVerbose($"Preserving BPF {workflow.Name}");
-                        return;
-                    }
-
-                    Logger.LogVerbose($"Trying to delete {componentType} {workflow.Name}");
-                    OrganizationService.Delete(Workflow.EntityLogicalName, objectId);
+                    OrganizationService.Execute(new DeleteEntityRequest { LogicalName = entityMetadata1.LogicalName }); 
                     break;
                 case ComponentType.SDKMessageProcessingStep:
                     var step = pluginRepository.GetSdkMessageProcessingStepById(objectId);
@@ -207,28 +182,59 @@ namespace Xrm.Framework.CI.Common
                     {
                         Name = relationshipBase.SchemaName
                     });
-                    //switch (relationshipBase.RelationshipType)
-                    //{
-                    //    case Microsoft.Xrm.Sdk.Metadata.RelationshipType.OneToManyRelationship:
-                    //        var oneToNRelationship = (OneToManyRelationshipMetadata)relationshipBase;
+                    break;
+                case ComponentType.OptionSet:
+                    var optionSetMetadata = solutionManagementRepository.GetOptionSetMetadata(objectId);
+                    Logger.LogVerbose($"Deleting {nameof(componentType)} {optionSetMetadata.Name} {objectId}");
+                    OrganizationService.Execute(new DeleteOptionSetRequest()
+                    {
+                        Name = optionSetMetadata.Name
+                    });
+                    break;
+                case ComponentType.SavedQuery:
+                    var savedQuery = solutionManagementRepository.GetEntityById<SavedQuery>(objectId);
+                    Logger.LogVerbose($"Deleting {nameof(componentType)} {savedQuery.Name} {objectId}");
+                    OrganizationService.Delete(SavedQuery.EntityLogicalName, objectId);
+                    break;
+                case ComponentType.WebResource:
+                    var webResource = solutionManagementRepository.GetEntityById<WebResource>(objectId);
+                    Logger.LogVerbose($"Deleting {nameof(componentType)} {webResource.Name} {objectId}");
+                    OrganizationService.Delete(WebResource.EntityLogicalName, objectId);
+                    break;
+                case ComponentType.Workflow:
+                    var workflow = solutionManagementRepository.GetEntityById<Workflow>(objectId);
+                    if (workflow.StateCode == WorkflowState.Activated)
+                    {
+                        Logger.LogVerbose($"Unpublishing workflow {workflow.Name}");
+                        OrganizationService.Execute(new SetStateRequest
+                        {
+                            EntityMoniker = workflow.ToEntityReference(),
+                            State = new OptionSetValue((int)WorkflowState.Draft),
+                            Status = new OptionSetValue((int)Workflow_StatusCode.Draft)
+                        });
+                    }
+                    if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
+                    {
+                        var entityMetadata2 = OrganizationService.GetEntityMetadata(workflow.UniqueName);
+                        Logger.LogVerbose($"Checking dependencies for BPF entity: {workflow.UniqueName}");
+                        DeleteObjectWithDependencies(entityMetadata2.MetadataId.Value, ComponentType.Entity, deletingHashSet);
+                    }
 
-                    //        break;
-                    //    case Microsoft.Xrm.Sdk.Metadata.RelationshipType.ManyToManyRelationship:
-                    //        var NToNRelationship = (ManyToManyRelationshipMetadata)relationshipBase;
-                    //        OrganizationService.Execute(new DeleteRelationshipRequest()
-                    //        {
-                    //            Name = oneToNRelationship.SchemaName
-                    //        });
-                    //        break;
-                    //}
+                    if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
+                    {
+                        RemoveAllWorkflowsFromBpf(workflow);
+                        Logger.LogVerbose($"Preserving BPF {workflow.Name}");
+                        return;
+                    }
+
+                    Logger.LogVerbose($"Trying to delete {componentType} {workflow.Name}");
+                    OrganizationService.Delete(Workflow.EntityLogicalName, objectId);
                     break;
                 default:
                     Logger.LogWarning($"Cannot delete {componentType} {objectId}: Delete for component type not implemented.");
                     break;
             }
         }
-
-        Workflow GetWorkflowById(Guid id) => new PluginRepository(context).GetWorkflowById(id);
 
         private IEnumerable<Dependency> GetDependeciesForDelete(Guid objectId, ComponentType? componentType) => ((RetrieveDependenciesForDeleteResponse)OrganizationService.Execute(new RetrieveDependenciesForDeleteRequest()
         {

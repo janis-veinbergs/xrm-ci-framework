@@ -1918,7 +1918,483 @@ namespace Xrm.Framework.CI.Common.Entities
 			}
 		}
 	}
-	
+
+
+	[System.Runtime.Serialization.DataContractAttribute()]
+	public enum ConnectionRoleState
+	{
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		Active = 0,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		Inactive = 1,
+	}
+
+
+	/// <summary>
+	/// Role describing a relationship between a two records.
+	/// </summary>
+	[System.Runtime.Serialization.DataContractAttribute()]
+	[Microsoft.Xrm.Sdk.Client.EntityLogicalNameAttribute("connectionrole")]
+	public partial class ConnectionRole : Microsoft.Xrm.Sdk.Entity, System.ComponentModel.INotifyPropertyChanging, System.ComponentModel.INotifyPropertyChanged
+	{
+
+		/// <summary>
+		/// Default Constructor.
+		/// </summary>
+		public ConnectionRole() :
+				base(EntityLogicalName)
+		{
+		}
+
+		public const string EntityLogicalName = "connectionrole";
+
+		public const string EntitySchemaName = "ConnectionRole";
+
+		public const string PrimaryIdAttribute = "connectionroleid";
+
+		public const string PrimaryNameAttribute = "name";
+
+		public const string EntityLogicalCollectionName = "connectionroles";
+
+		public const string EntitySetName = "connectionroles";
+
+		public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+
+		public event System.ComponentModel.PropertyChangingEventHandler PropertyChanging;
+
+		private void OnPropertyChanged(string propertyName)
+		{
+			if ((this.PropertyChanged != null))
+			{
+				this.PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+			}
+		}
+
+		private void OnPropertyChanging(string propertyName)
+		{
+			if ((this.PropertyChanging != null))
+			{
+				this.PropertyChanging(this, new System.ComponentModel.PropertyChangingEventArgs(propertyName));
+			}
+		}
+
+		/// <summary>
+		/// Categories for connection roles.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("category")]
+		public Microsoft.Xrm.Sdk.OptionSetValue Category
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.OptionSetValue>("category");
+			}
+			set
+			{
+				this.OnPropertyChanging("Category");
+				this.SetAttributeValue("category", value);
+				this.OnPropertyChanged("Category");
+			}
+		}
+
+		/// <summary>
+		/// Categories for connection roles.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("category")]
+		public virtual ConnectionRole_Category? CategoryEnum
+		{
+			get
+			{
+				return ((ConnectionRole_Category?)(EntityOptionSetEnum.GetEnum(this, "category")));
+			}
+			set
+			{
+				this.OnPropertyChanging("Category");
+				this.SetAttributeValue("category", value.HasValue ? new Microsoft.Xrm.Sdk.OptionSetValue((int)value) : null);
+				this.OnPropertyChanged("Category");
+			}
+		}
+
+		/// <summary>
+		/// State of the component.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("componentstate")]
+		public Microsoft.Xrm.Sdk.OptionSetValue ComponentState
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.OptionSetValue>("componentstate");
+			}
+		}
+
+		/// <summary>
+		/// State of the component.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("componentstate")]
+		public virtual ComponentState? ComponentStateEnum
+		{
+			get
+			{
+				return ((ComponentState?)(EntityOptionSetEnum.GetEnum(this, "componentstate")));
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the connection role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("connectionroleid")]
+		public System.Nullable<System.Guid> ConnectionRoleId
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.Guid>>("connectionroleid");
+			}
+			set
+			{
+				this.OnPropertyChanging("ConnectionRoleId");
+				this.SetAttributeValue("connectionroleid", value);
+				if (value.HasValue)
+				{
+					base.Id = value.Value;
+				}
+				else
+				{
+					base.Id = System.Guid.Empty;
+				}
+				this.OnPropertyChanged("ConnectionRoleId");
+			}
+		}
+
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("connectionroleid")]
+		public override System.Guid Id
+		{
+			get
+			{
+				return base.Id;
+			}
+			set
+			{
+				this.ConnectionRoleId = value;
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the published or unpublished connection role record.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("connectionroleidunique")]
+		public System.Nullable<System.Guid> ConnectionRoleIdUnique
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.Guid>>("connectionroleidunique");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the user who created the relationship role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("createdby")]
+		public Microsoft.Xrm.Sdk.EntityReference CreatedBy
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("createdby");
+			}
+		}
+
+		/// <summary>
+		/// Date and time when the connection role was created.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("createdon")]
+		public System.Nullable<System.DateTime> CreatedOn
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.DateTime>>("createdon");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the delegate user who created the relationship role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("createdonbehalfby")]
+		public Microsoft.Xrm.Sdk.EntityReference CreatedOnBehalfBy
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("createdonbehalfby");
+			}
+			set
+			{
+				this.OnPropertyChanging("CreatedOnBehalfBy");
+				this.SetAttributeValue("createdonbehalfby", value);
+				this.OnPropertyChanged("CreatedOnBehalfBy");
+			}
+		}
+
+		/// <summary>
+		/// Description of the connection role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("description")]
+		public string Description
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("description");
+			}
+			set
+			{
+				this.OnPropertyChanging("Description");
+				this.SetAttributeValue("description", value);
+				this.OnPropertyChanged("Description");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the data import or data migration that created this record.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("importsequencenumber")]
+		public System.Nullable<int> ImportSequenceNumber
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<int>>("importsequencenumber");
+			}
+			set
+			{
+				this.OnPropertyChanging("ImportSequenceNumber");
+				this.SetAttributeValue("importsequencenumber", value);
+				this.OnPropertyChanged("ImportSequenceNumber");
+			}
+		}
+
+		/// <summary>
+		/// Version in which the form is introduced.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("introducedversion")]
+		public string IntroducedVersion
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("introducedversion");
+			}
+			set
+			{
+				this.OnPropertyChanging("IntroducedVersion");
+				this.SetAttributeValue("introducedversion", value);
+				this.OnPropertyChanged("IntroducedVersion");
+			}
+		}
+
+		/// <summary>
+		/// Information that specifies whether this component can be customized.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("iscustomizable")]
+		public Microsoft.Xrm.Sdk.BooleanManagedProperty IsCustomizable
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.BooleanManagedProperty>("iscustomizable");
+			}
+			set
+			{
+				this.OnPropertyChanging("IsCustomizable");
+				this.SetAttributeValue("iscustomizable", value);
+				this.OnPropertyChanged("IsCustomizable");
+			}
+		}
+
+		/// <summary>
+		/// Indicates whether the solution component is part of a managed solution.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("ismanaged")]
+		public System.Nullable<bool> IsManaged
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<bool>>("ismanaged");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the user who last modified the connection role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("modifiedby")]
+		public Microsoft.Xrm.Sdk.EntityReference ModifiedBy
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("modifiedby");
+			}
+		}
+
+		/// <summary>
+		/// Date and time when the connection role was last modified.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("modifiedon")]
+		public System.Nullable<System.DateTime> ModifiedOn
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.DateTime>>("modifiedon");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the delegate user who modified the relationship role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("modifiedonbehalfby")]
+		public Microsoft.Xrm.Sdk.EntityReference ModifiedOnBehalfBy
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("modifiedonbehalfby");
+			}
+			set
+			{
+				this.OnPropertyChanging("ModifiedOnBehalfBy");
+				this.SetAttributeValue("modifiedonbehalfby", value);
+				this.OnPropertyChanged("ModifiedOnBehalfBy");
+			}
+		}
+
+		/// <summary>
+		/// Name of the connection role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("name")]
+		public string Name
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("name");
+			}
+			set
+			{
+				this.OnPropertyChanging("Name");
+				this.SetAttributeValue("name", value);
+				this.OnPropertyChanged("Name");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the organization that this connection role belongs to.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("organizationid")]
+		public Microsoft.Xrm.Sdk.EntityReference OrganizationId
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("organizationid");
+			}
+		}
+
+		/// <summary>
+		/// Date and time when the record was last overwritten.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("overwritetime")]
+		public System.Nullable<System.DateTime> OverwriteTime
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.DateTime>>("overwritetime");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the associated solution.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("solutionid")]
+		public System.Nullable<System.Guid> SolutionId
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.Guid>>("solutionid");
+			}
+		}
+
+		/// <summary>
+		/// Status of the connection role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("statecode")]
+		public System.Nullable<Xrm.Framework.CI.Common.Entities.ConnectionRoleState> StateCode
+		{
+			get
+			{
+				Microsoft.Xrm.Sdk.OptionSetValue optionSet = this.GetAttributeValue<Microsoft.Xrm.Sdk.OptionSetValue>("statecode");
+				if ((optionSet != null))
+				{
+					return ((Xrm.Framework.CI.Common.Entities.ConnectionRoleState)(System.Enum.ToObject(typeof(Xrm.Framework.CI.Common.Entities.ConnectionRoleState), optionSet.Value)));
+				}
+				else
+				{
+					return null;
+				}
+			}
+			set
+			{
+				this.OnPropertyChanging("StateCode");
+				if ((value == null))
+				{
+					this.SetAttributeValue("statecode", null);
+				}
+				else
+				{
+					this.SetAttributeValue("statecode", new Microsoft.Xrm.Sdk.OptionSetValue(((int)(value))));
+				}
+				this.OnPropertyChanged("StateCode");
+			}
+		}
+
+		/// <summary>
+		/// Reason for the status of the connection role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("statuscode")]
+		public Microsoft.Xrm.Sdk.OptionSetValue StatusCode
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.OptionSetValue>("statuscode");
+			}
+			set
+			{
+				this.OnPropertyChanging("StatusCode");
+				this.SetAttributeValue("statuscode", value);
+				this.OnPropertyChanged("StatusCode");
+			}
+		}
+
+		/// <summary>
+		/// Reason for the status of the connection role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("statuscode")]
+		public virtual ConnectionRole_StatusCode? StatusCodeEnum
+		{
+			get
+			{
+				return ((ConnectionRole_StatusCode?)(EntityOptionSetEnum.GetEnum(this, "statuscode")));
+			}
+			set
+			{
+				this.OnPropertyChanging("StatusCode");
+				this.SetAttributeValue("statuscode", value.HasValue ? new Microsoft.Xrm.Sdk.OptionSetValue((int)value) : null);
+				this.OnPropertyChanged("StatusCode");
+			}
+		}
+
+		/// <summary>
+		/// Version number of the connection role.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("versionnumber")]
+		public System.Nullable<long> VersionNumber
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<long>>("versionnumber");
+			}
+		}
+	}
+
 	/// <summary>
 	/// A component dependency in CRM.
 	/// </summary>
@@ -5455,7 +5931,722 @@ namespace Xrm.Framework.CI.Common.Entities
 			}
 		}
 	}
-	
+
+	[System.Runtime.Serialization.DataContractAttribute()]
+	public enum SavedQueryState
+	{
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		Active = 0,
+
+		[System.Runtime.Serialization.EnumMemberAttribute()]
+		Inactive = 1,
+	}
+
+	/// <summary>
+	/// Saved query against the database.
+	/// </summary>
+	[System.Runtime.Serialization.DataContractAttribute()]
+	[Microsoft.Xrm.Sdk.Client.EntityLogicalNameAttribute("savedquery")]
+	public partial class SavedQuery : Microsoft.Xrm.Sdk.Entity, System.ComponentModel.INotifyPropertyChanging, System.ComponentModel.INotifyPropertyChanged
+	{
+
+		/// <summary>
+		/// Default Constructor.
+		/// </summary>
+		public SavedQuery() :
+				base(EntityLogicalName)
+		{
+		}
+
+		public const string EntityLogicalName = "savedquery";
+
+		public const string EntitySchemaName = "SavedQuery";
+
+		public const string PrimaryIdAttribute = "savedqueryid";
+
+		public const string PrimaryNameAttribute = "name";
+
+		public const string EntityLogicalCollectionName = "savedqueries";
+
+		public const string EntitySetName = "savedqueries";
+
+		public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+
+		public event System.ComponentModel.PropertyChangingEventHandler PropertyChanging;
+
+		private void OnPropertyChanged(string propertyName)
+		{
+			if ((this.PropertyChanged != null))
+			{
+				this.PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+			}
+		}
+
+		private void OnPropertyChanging(string propertyName)
+		{
+			if ((this.PropertyChanging != null))
+			{
+				this.PropertyChanging(this, new System.ComponentModel.PropertyChangingEventArgs(propertyName));
+			}
+		}
+
+		/// <summary>
+		/// Type the column name that will be used to group the results from the data collected across multiple records from a system view.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("advancedgroupby")]
+		public string AdvancedGroupBy
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("advancedgroupby");
+			}
+			set
+			{
+				this.OnPropertyChanging("AdvancedGroupBy");
+				this.SetAttributeValue("advancedgroupby", value);
+				this.OnPropertyChanged("AdvancedGroupBy");
+			}
+		}
+
+		/// <summary>
+		/// Tells whether the view can be deleted.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("canbedeleted")]
+		public Microsoft.Xrm.Sdk.BooleanManagedProperty CanBeDeleted
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.BooleanManagedProperty>("canbedeleted");
+			}
+			set
+			{
+				this.OnPropertyChanging("CanBeDeleted");
+				this.SetAttributeValue("canbedeleted", value);
+				this.OnPropertyChanged("CanBeDeleted");
+			}
+		}
+
+		/// <summary>
+		/// Contains the columns and sorting criteria for the view, stored in XML format.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("columnsetxml")]
+		public string ColumnSetXml
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("columnsetxml");
+			}
+			set
+			{
+				this.OnPropertyChanging("ColumnSetXml");
+				this.SetAttributeValue("columnsetxml", value);
+				this.OnPropertyChanged("ColumnSetXml");
+			}
+		}
+
+		/// <summary>
+		/// For internal use only.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("componentstate")]
+		public Microsoft.Xrm.Sdk.OptionSetValue ComponentState
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.OptionSetValue>("componentstate");
+			}
+		}
+
+		/// <summary>
+		/// For internal use only.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("componentstate")]
+		public virtual ComponentState? ComponentStateEnum
+		{
+			get
+			{
+				return ((ComponentState?)(EntityOptionSetEnum.GetEnum(this, "componentstate")));
+			}
+		}
+
+		/// <summary>
+		/// Type information about how the items in the system view are formatted.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("conditionalformatting")]
+		public string ConditionalFormatting
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("conditionalformatting");
+			}
+			set
+			{
+				this.OnPropertyChanging("ConditionalFormatting");
+				this.SetAttributeValue("conditionalformatting", value);
+				this.OnPropertyChanged("ConditionalFormatting");
+			}
+		}
+
+		/// <summary>
+		/// Shows who created the record.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("createdby")]
+		public Microsoft.Xrm.Sdk.EntityReference CreatedBy
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("createdby");
+			}
+		}
+
+		/// <summary>
+		/// Shows the date and time when the record was created. The date and time are displayed in the time zone selected in Microsoft Dynamics 365 options.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("createdon")]
+		public System.Nullable<System.DateTime> CreatedOn
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.DateTime>>("createdon");
+			}
+		}
+
+		/// <summary>
+		/// Shows who created the record on behalf of another user.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("createdonbehalfby")]
+		public Microsoft.Xrm.Sdk.EntityReference CreatedOnBehalfBy
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("createdonbehalfby");
+			}
+			set
+			{
+				this.OnPropertyChanging("CreatedOnBehalfBy");
+				this.SetAttributeValue("createdonbehalfby", value);
+				this.OnPropertyChanged("CreatedOnBehalfBy");
+			}
+		}
+
+		/// <summary>
+		/// Type additional information to describe the view, such as the filter criteria or intended results set.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("description")]
+		public string Description
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("description");
+			}
+			set
+			{
+				this.OnPropertyChanging("Description");
+				this.SetAttributeValue("description", value);
+				this.OnPropertyChanged("Description");
+			}
+		}
+
+		/// <summary>
+		/// String specifying the query in Fetch XML language.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("fetchxml")]
+		public string FetchXml
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("fetchxml");
+			}
+			set
+			{
+				this.OnPropertyChanging("FetchXml");
+				this.SetAttributeValue("fetchxml", value);
+				this.OnPropertyChanged("FetchXml");
+			}
+		}
+
+		/// <summary>
+		/// Version in which the form is introduced.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("introducedversion")]
+		public string IntroducedVersion
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("introducedversion");
+			}
+			set
+			{
+				this.OnPropertyChanging("IntroducedVersion");
+				this.SetAttributeValue("introducedversion", value);
+				this.OnPropertyChanged("IntroducedVersion");
+			}
+		}
+
+		/// <summary>
+		/// Tells whether a user created the view.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("iscustom")]
+		public System.Nullable<bool> IsCustom
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<bool>>("iscustom");
+			}
+		}
+
+		/// <summary>
+		/// Tells whether the component can be customized.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("iscustomizable")]
+		public Microsoft.Xrm.Sdk.BooleanManagedProperty IsCustomizable
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.BooleanManagedProperty>("iscustomizable");
+			}
+			set
+			{
+				this.OnPropertyChanging("IsCustomizable");
+				this.SetAttributeValue("iscustomizable", value);
+				this.OnPropertyChanged("IsCustomizable");
+			}
+		}
+
+		/// <summary>
+		/// Tells whether the view is the default view for the specified record type (entity).
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("isdefault")]
+		public System.Nullable<bool> IsDefault
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<bool>>("isdefault");
+			}
+			set
+			{
+				this.OnPropertyChanging("IsDefault");
+				this.SetAttributeValue("isdefault", value);
+				this.OnPropertyChanged("IsDefault");
+			}
+		}
+
+		/// <summary>
+		/// Tells whether the record is part of a managed solution.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("ismanaged")]
+		public System.Nullable<bool> IsManaged
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<bool>>("ismanaged");
+			}
+		}
+
+		/// <summary>
+		/// Indicates whether or not this is viewable by the entire organization.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("isprivate")]
+		[System.ObsoleteAttribute()]
+		public System.Nullable<bool> IsPrivate
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<bool>>("isprivate");
+			}
+		}
+
+		/// <summary>
+		/// Choose whether the view is compatible with Quick Find. When users search for specific items, you define the fields that are searched in.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("isquickfindquery")]
+		public System.Nullable<bool> IsQuickFindQuery
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<bool>>("isquickfindquery");
+			}
+			set
+			{
+				this.OnPropertyChanging("IsQuickFindQuery");
+				this.SetAttributeValue("isquickfindquery", value);
+				this.OnPropertyChanged("IsQuickFindQuery");
+			}
+		}
+
+		/// <summary>
+		/// Tells whether the view was created by a user.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("isuserdefined")]
+		public System.Nullable<bool> IsUserDefined
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<bool>>("isuserdefined");
+			}
+		}
+
+		/// <summary>
+		/// Layout data in JSON format.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("layoutjson")]
+		public string LayoutJson
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("layoutjson");
+			}
+			set
+			{
+				this.OnPropertyChanging("LayoutJson");
+				this.SetAttributeValue("layoutjson", value);
+				this.OnPropertyChanged("LayoutJson");
+			}
+		}
+
+		/// <summary>
+		/// For internal use only.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("layoutxml")]
+		public string LayoutXml
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("layoutxml");
+			}
+			set
+			{
+				this.OnPropertyChanging("LayoutXml");
+				this.SetAttributeValue("layoutxml", value);
+				this.OnPropertyChanged("LayoutXml");
+			}
+		}
+
+		/// <summary>
+		/// Shows who last updated the record.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("modifiedby")]
+		public Microsoft.Xrm.Sdk.EntityReference ModifiedBy
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("modifiedby");
+			}
+		}
+
+		/// <summary>
+		/// Shows the date and time when the record was last updated. The date and time are displayed in the time zone selected in Microsoft Dynamics 365 options.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("modifiedon")]
+		public System.Nullable<System.DateTime> ModifiedOn
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.DateTime>>("modifiedon");
+			}
+		}
+
+		/// <summary>
+		/// Shows who last updated the record on behalf of another user.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("modifiedonbehalfby")]
+		public Microsoft.Xrm.Sdk.EntityReference ModifiedOnBehalfBy
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("modifiedonbehalfby");
+			}
+			set
+			{
+				this.OnPropertyChanging("ModifiedOnBehalfBy");
+				this.SetAttributeValue("modifiedonbehalfby", value);
+				this.OnPropertyChanged("ModifiedOnBehalfBy");
+			}
+		}
+
+		/// <summary>
+		/// Type a name for the view to describe what results the view will contain. This name is visible to users in the View list.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("name")]
+		public string Name
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("name");
+			}
+			set
+			{
+				this.OnPropertyChanging("Name");
+				this.SetAttributeValue("name", value);
+				this.OnPropertyChanged("Name");
+			}
+		}
+
+		/// <summary>
+		/// String specifying the corresponding sql query for the fetch xml specified for offline use.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("offlinesqlquery")]
+		public string OfflineSqlQuery
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("offlinesqlquery");
+			}
+			set
+			{
+				this.OnPropertyChanging("OfflineSqlQuery");
+				this.SetAttributeValue("offlinesqlquery", value);
+				this.OnPropertyChanged("OfflineSqlQuery");
+			}
+		}
+
+		/// <summary>
+		/// Choose the ID of the organization that the record is associated with.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("organizationid")]
+		public Microsoft.Xrm.Sdk.EntityReference OrganizationId
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.EntityReference>("organizationid");
+			}
+		}
+
+		/// <summary>
+		/// For the organization, type the tab order to determine how users navigate through the screen using only the Tab key.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("organizationtaborder")]
+		public System.Nullable<int> OrganizationTabOrder
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<int>>("organizationtaborder");
+			}
+		}
+
+		/// <summary>
+		/// For internal use only.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("overwritetime")]
+		public System.Nullable<System.DateTime> OverwriteTime
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.DateTime>>("overwritetime");
+			}
+		}
+
+		/// <summary>
+		/// For internal use only.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("queryapi")]
+		public string QueryAPI
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("queryapi");
+			}
+		}
+
+		/// <summary>
+		/// For internal use only.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("queryappusage")]
+		public System.Nullable<int> QueryAppUsage
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<int>>("queryappusage");
+			}
+			set
+			{
+				this.OnPropertyChanging("QueryAppUsage");
+				this.SetAttributeValue("queryappusage", value);
+				this.OnPropertyChanged("QueryAppUsage");
+			}
+		}
+
+		/// <summary>
+		/// Shows the type of the query.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("querytype")]
+		public System.Nullable<int> QueryType
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<int>>("querytype");
+			}
+			set
+			{
+				this.OnPropertyChanging("QueryType");
+				this.SetAttributeValue("querytype", value);
+				this.OnPropertyChanged("QueryType");
+			}
+		}
+
+		/// <summary>
+		/// Type of entity displayed in the view.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("returnedtypecode")]
+		public string ReturnedTypeCode
+		{
+			get
+			{
+				return this.GetAttributeValue<string>("returnedtypecode");
+			}
+			set
+			{
+				this.OnPropertyChanging("ReturnedTypeCode");
+				this.SetAttributeValue("returnedtypecode", value);
+				this.OnPropertyChanged("ReturnedTypeCode");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the view.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("savedqueryid")]
+		public System.Nullable<System.Guid> SavedQueryId
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.Guid>>("savedqueryid");
+			}
+			set
+			{
+				this.OnPropertyChanging("SavedQueryId");
+				this.SetAttributeValue("savedqueryid", value);
+				if (value.HasValue)
+				{
+					base.Id = value.Value;
+				}
+				else
+				{
+					base.Id = System.Guid.Empty;
+				}
+				this.OnPropertyChanged("SavedQueryId");
+			}
+		}
+
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("savedqueryid")]
+		public override System.Guid Id
+		{
+			get
+			{
+				return base.Id;
+			}
+			set
+			{
+				this.SavedQueryId = value;
+			}
+		}
+
+		/// <summary>
+		/// For internal use only.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("savedqueryidunique")]
+		public System.Nullable<System.Guid> SavedQueryIdUnique
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.Guid>>("savedqueryidunique");
+			}
+		}
+
+		/// <summary>
+		/// Unique identifier of the associated solution.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("solutionid")]
+		public System.Nullable<System.Guid> SolutionId
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<System.Guid>>("solutionid");
+			}
+		}
+
+		/// <summary>
+		/// Shows the status of the view.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("statecode")]
+		public System.Nullable<Xrm.Framework.CI.Common.Entities.SavedQueryState> StateCode
+		{
+			get
+			{
+				Microsoft.Xrm.Sdk.OptionSetValue optionSet = this.GetAttributeValue<Microsoft.Xrm.Sdk.OptionSetValue>("statecode");
+				if ((optionSet != null))
+				{
+					return ((Xrm.Framework.CI.Common.Entities.SavedQueryState)(System.Enum.ToObject(typeof(Xrm.Framework.CI.Common.Entities.SavedQueryState), optionSet.Value)));
+				}
+				else
+				{
+					return null;
+				}
+			}
+			set
+			{
+				this.OnPropertyChanging("StateCode");
+				if ((value == null))
+				{
+					this.SetAttributeValue("statecode", null);
+				}
+				else
+				{
+					this.SetAttributeValue("statecode", new Microsoft.Xrm.Sdk.OptionSetValue(((int)(value))));
+				}
+				this.OnPropertyChanged("StateCode");
+			}
+		}
+
+		/// <summary>
+		/// Shows the reason code that explains the status of the record.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("statuscode")]
+		public Microsoft.Xrm.Sdk.OptionSetValue StatusCode
+		{
+			get
+			{
+				return this.GetAttributeValue<Microsoft.Xrm.Sdk.OptionSetValue>("statuscode");
+			}
+			set
+			{
+				this.OnPropertyChanging("StatusCode");
+				this.SetAttributeValue("statuscode", value);
+				this.OnPropertyChanged("StatusCode");
+			}
+		}
+
+		/// <summary>
+		/// Shows the reason code that explains the status of the record.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("statuscode")]
+		public virtual SavedQuery_StatusCode? StatusCodeEnum
+		{
+			get
+			{
+				return ((SavedQuery_StatusCode?)(EntityOptionSetEnum.GetEnum(this, "statuscode")));
+			}
+			set
+			{
+				this.OnPropertyChanging("StatusCode");
+				this.SetAttributeValue("statuscode", value.HasValue ? new Microsoft.Xrm.Sdk.OptionSetValue((int)value) : null);
+				this.OnPropertyChanged("StatusCode");
+			}
+		}
+
+		/// <summary>
+		/// Version number of the view.
+		/// </summary>
+		[Microsoft.Xrm.Sdk.AttributeLogicalNameAttribute("versionnumber")]
+		public System.Nullable<long> VersionNumber
+		{
+			get
+			{
+				return this.GetAttributeValue<System.Nullable<long>>("versionnumber");
+			}
+		}
+	}
+
 	/// <summary>
 	/// Message that is supported by the SDK.
 	/// </summary>
@@ -14619,7 +15810,18 @@ namespace Xrm.Framework.CI.Common.Entities
 				return this.CreateQuery<Xrm.Framework.CI.Common.Entities.connectionreference>();
 			}
 		}
-		
+
+		/// <summary>
+		/// Gets a binding to the set of all <see cref="Xrm.Framework.CI.Common.Entities.ConnectionRole"/> entities.
+		/// </summary>
+		public System.Linq.IQueryable<Xrm.Framework.CI.Common.Entities.ConnectionRole> ConnectionRoleSet
+		{
+			get
+			{
+				return this.CreateQuery<Xrm.Framework.CI.Common.Entities.ConnectionRole>();
+			}
+		}
+
 		/// <summary>
 		/// Gets a binding to the set of all <see cref="Xrm.Framework.CI.Common.Entities.Dependency"/> entities.
 		/// </summary>
@@ -14707,7 +15909,18 @@ namespace Xrm.Framework.CI.Common.Entities
 				return this.CreateQuery<Xrm.Framework.CI.Common.Entities.SdkMessage>();
 			}
 		}
-		
+
+		/// <summary>
+		/// Gets a binding to the set of all <see cref="Xrm.Framework.CI.Common.Entities.SavedQuery"/> entities.
+		/// </summary>
+		public System.Linq.IQueryable<Xrm.Framework.CI.Common.Entities.SavedQuery> SavedQuerySet
+		{
+			get
+			{
+				return this.CreateQuery<Xrm.Framework.CI.Common.Entities.SavedQuery>();
+			}
+		}
+
 		/// <summary>
 		/// Gets a binding to the set of all <see cref="Xrm.Framework.CI.Common.Entities.SdkMessageFilter"/> entities.
 		/// </summary>
