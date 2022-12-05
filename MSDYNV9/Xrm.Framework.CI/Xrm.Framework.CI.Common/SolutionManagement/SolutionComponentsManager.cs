@@ -129,7 +129,7 @@ namespace Xrm.Framework.CI.Common
             deletingHashSet.Add(objectkey);
 
             Logger.LogVerbose($"Checking dependencies for {componentType} / {objectId}");
-            foreach (var objectToDelete in GetDependeciesForDelete(objectId, componentType))
+            foreach (var objectToDelete in solutionManagementRepository.GetDependeciesForDelete(objectId, componentType))
             {
                 DeleteObjectWithDependencies(objectToDelete.DependentComponentObjectId.Value, objectToDelete.DependentComponentTypeEnum, deletingHashSet);
             }
@@ -157,7 +157,8 @@ namespace Xrm.Framework.CI.Common
                     OrganizationService.Delete(SdkMessageProcessingStep.EntityLogicalName, objectId);
                     break;
                 case ComponentType.SDKMessageProcessingStepImage:
-                    Logger.LogVerbose($"Trying to delete {componentType} / {objectId}");
+                    var sdkImage = solutionManagementRepository.GetEntityById<SdkMessageProcessingStepImage>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {sdkImage.Name} / {objectId}");
                     OrganizationService.Delete(SdkMessageProcessingStepImage.EntityLogicalName, objectId);
                     break;
                 case ComponentType.PluginType:
@@ -166,11 +167,13 @@ namespace Xrm.Framework.CI.Common
                     OrganizationService.Delete(PluginType.EntityLogicalName, objectId);
                     break;
                 case ComponentType.PluginAssembly:
-                    Logger.LogVerbose($"Trying to delete {componentType} {objectId}");
+                    var pluginAssembly = solutionManagementRepository.GetEntityById<PluginAssembly>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {pluginAssembly.Name} {objectId}");
                     OrganizationService.Delete(PluginAssembly.EntityLogicalName, objectId);
                     break;
                 case ComponentType.ServiceEndpoint:
-                    Logger.LogVerbose($"Trying to delete {componentType} {objectId}");
+                    var serviceEndpoint = solutionManagementRepository.GetEntityById<ServiceEndpoint>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {serviceEndpoint.Name} {objectId}");
                     OrganizationService.Delete(ServiceEndpoint.EntityLogicalName, objectId);
                     break;
                 case ComponentType.EntityRelationship:
@@ -236,11 +239,7 @@ namespace Xrm.Framework.CI.Common
             }
         }
 
-        private IEnumerable<Dependency> GetDependeciesForDelete(Guid objectId, ComponentType? componentType) => ((RetrieveDependenciesForDeleteResponse)OrganizationService.Execute(new RetrieveDependenciesForDeleteRequest()
-        {
-            ComponentType = (int)componentType,
-            ObjectId = objectId
-        })).EntityCollection.Entities.Select(x => x.ToEntity<Dependency>());
+        
 
         private const string ActionComposieClassWithAssemblyQualifiedName = "Microsoft.Crm.Workflow.Activities.ActionComposite, Microsoft.Crm.Workflow, Version=8.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
         private const string mxswaNamespace = "clr-namespace:Microsoft.Xrm.Sdk.Workflow.Activities;assembly=Microsoft.Xrm.Sdk.Workflow, Version=8.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
