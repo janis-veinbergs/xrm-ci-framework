@@ -136,6 +136,7 @@
   <ItemGroup>
     <Compile Include="AsyncOperationManager.cs" />
     <Compile Include="Common\ReflectionLoader.cs" />
+    <Compile Include="Common\SolutionComponentInfo.cs" />
     <Compile Include="Common\XrmSolutionInfo.cs" />
     <Compile Include="Connections\ConnectionReferenceManager.cs" />
     <Compile Include="Data\ConfigurationMigrationManager.cs" />

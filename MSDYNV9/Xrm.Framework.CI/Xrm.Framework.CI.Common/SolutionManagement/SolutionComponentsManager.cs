@@ -233,6 +233,41 @@ namespace Xrm.Framework.CI.Common
                     Logger.LogVerbose($"Trying to delete {componentType} {workflow.Name}");
                     OrganizationService.Delete(Workflow.EntityLogicalName, objectId);
                     break;
+                case ComponentType.Report:
+                    var report = solutionManagementRepository.GetEntityById<Report>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {report.Name}");
+                    OrganizationService.Delete(Report.EntityLogicalName, objectId);
+                    break;
+                case ComponentType.ContractTemplate:
+                    var contractTemplate = solutionManagementRepository.GetEntityById<ContractTemplate>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {contractTemplate.Name}");
+                    OrganizationService.Delete(ContractTemplate.EntityLogicalName, objectId);
+                    break;
+                case ComponentType.EmailTemplate:
+                    var template = solutionManagementRepository.GetEntityById<Template>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {template.Title}");
+                    OrganizationService.Delete(Template.EntityLogicalName, objectId);
+                    break;
+                case ComponentType.KBArticleTemplate:
+                    var kbArticleTemplate = solutionManagementRepository.GetEntityById<KbArticleTemplate>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {kbArticleTemplate.Title}");
+                    OrganizationService.Delete(KbArticleTemplate.EntityLogicalName, objectId);
+                    break;
+                case ComponentType.RibbonCustomization:
+                    var ribbonCustomization = solutionManagementRepository.GetEntityById<RibbonCustomization>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {ribbonCustomization.Entity} {ribbonCustomization.RibbonCustomizationId}");
+                    OrganizationService.Delete(RibbonCustomization.EntityLogicalName, objectId);
+                    break;
+                case ComponentType.SiteMap:
+                    var siteMap = solutionManagementRepository.GetEntityById<SiteMap>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {siteMap.SiteMapName}");
+                    OrganizationService.Delete(SiteMap.EntityLogicalName, objectId);
+                    break;
+                case ComponentType.MailMergeTemplate:
+                    var mailMergeTemplate = solutionManagementRepository.GetEntityById<MailMergeTemplate>(objectId);
+                    Logger.LogVerbose($"Trying to delete {componentType} {mailMergeTemplate.Name}");
+                    OrganizationService.Delete(MailMergeTemplate.EntityLogicalName, objectId);
+                    break;
                 default:
                     Logger.LogWarning($"Cannot delete {componentType} {objectId}: Delete for component type not implemented.");
                     break;

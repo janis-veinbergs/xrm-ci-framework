@@ -4,7 +4,7 @@
   <CrmSvcUtilRelativePath>DLaB.EarlyBoundGenerator\crmsvcutil.exe</CrmSvcUtilRelativePath>
   <IncludeCommandLine>false</IncludeCommandLine>
   <MaskPassword>true</MaskPassword>
-  <SettingsVersion>1.2020.10.2</SettingsVersion>
+  <SettingsVersion>1.2022.9.22</SettingsVersion>
   <Version>1.2022.9.22</Version>
   <ExtensionConfig>
     <ActionPrefixesWhitelist />
@@ -28,13 +28,21 @@ saveappsetting</ActionsToSkip>
       bulkdeleteoperation|
       connectionrole|
       connectionreference|
+      contracttemplate|
+      customcontrol|
       dependency|
       duplicaterule|
       environmentvariabledefinition|
       environmentvariablevalue|
+      fieldsecurityprofile|
       importjob|
+      kbarticletemplate|
+      mailmergetemplate|
+      mobileofflineprofile|
       pluginassembly|
       plugintype|
+      report|
+      ribboncustomization|
       role|
       savedquery|
       sdkmessage|
@@ -42,11 +50,13 @@ saveappsetting</ActionsToSkip>
       sdkmessageprocessingstep|
       sdkmessageprocessingstepimage|
       serviceendpoint|
-      solution|
-      solutioncomponent|
-      solutionhistorydata|
+      sitemap|
       systemform|
       systemuser|
+      sla|
+      solution|
+      solutioncomponent|
+      template|
       webresource|
       workflow</EntitiesWhitelist>
     <EntityAttributeSpecifiedNames />

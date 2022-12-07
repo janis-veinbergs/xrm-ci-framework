@@ -35,6 +35,16 @@ namespace Xrm.Framework.CI.Common
             RetrieveAsIfPublished = false
         })).RelationshipMetadata;
 
+        public static OptionSetMetadataBase GetOptionSetMetadata(this IOrganizationService service, Guid metadataId) => ((RetrieveOptionSetResponse)service.Execute(new RetrieveOptionSetRequest()
+        {
+            MetadataId = metadataId
+        })).OptionSetMetadata;
+
+        public static AttributeMetadata GetAttributeMetadata(this IOrganizationService service, Guid metadataId) => ((RetrieveAttributeResponse)service.Execute(new RetrieveAttributeRequest()
+        {
+            MetadataId = metadataId
+        })).AttributeMetadata;
+
         public static void ProvisionLanguage(this IOrganizationService service, int language) => service.Execute(new ProvisionLanguageRequest
         {
             Language = language

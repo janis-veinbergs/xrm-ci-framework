@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Crm.Sdk.Messages;
@@ -20,6 +21,8 @@ namespace Xrm.Framework.CI.Common
             pluginRepository = new PluginRepository(context);
         }
 
+        public T GetEntityById<T>(Guid id, Func<T, T> selector) where T : Entity => context.CreateQuery<T>().Where(x => x.Id == id).Select(selector).Single();
+
         public T GetEntityById<T>(Guid id) where T : Entity => context.CreateQuery<T>().Single(x => x.Id == id);
 
         public Entity GetEntityByReference(EntityReference entityReference) => context.CreateQuery(entityReference.LogicalName).Single(x => x.Id == entityReference.Id);
@@ -38,5 +41,19 @@ namespace Xrm.Framework.CI.Common
             ComponentType = (int)componentType,
             ObjectId = objectId
         })).EntityCollection.Entities.Select(x => x.ToEntity<Dependency>());
+
+        static ConcurrentDictionary<Guid, Lazy<List<Solution>>> getSolutionsContainingObjectCache = new ConcurrentDictionary<Guid, Lazy<List<Solution>>>(1, 100);
+        public IEnumerable<Solution> GetSolutionsContainingObject(Guid objectId) {
+            var solutions = getSolutionsContainingObjectCache.GetOrAdd(objectId, new Lazy<List<Solution>>(() => 
+                (from c in context.SolutionComponentSet
+                 join s in context.SolutionSet on c.SolutionId equals new EntityReference(Solution.EntityLogicalName, s.Id)
+                 where c.ObjectId == objectId
+                 select new Solution
+                 {
+                     UniqueName = s.UniqueName
+                 }).ToList()
+            ));
+            return solutions.Value;
+        }
     }
 }

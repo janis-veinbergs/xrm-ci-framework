@@ -6,6 +6,8 @@ using System.Management.Automation;
 using System.Text;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
+using Xrm.Framework.CI.Common;
+using Xrm.Framework.CI.Common.Common;
 using Xrm.Framework.CI.Common.Entities;
 using Xrm.Framework.CI.PowerShell.Cmdlets.Common;
 
@@ -20,7 +22,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
     ///   <para>Gets UniqueSolutionName components</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "XrmSolutionComponents")]
-    [OutputType(typeof(SolutionComponent))]
+    [OutputType(typeof(SolutionComponentInfo))]
     public class GetXrmSolutionComponentsCommand : XrmCommandBase
     {
         #region Parameters
@@ -30,6 +32,14 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         /// </summary>
         [Parameter(Mandatory = true)]
         public string SolutionName { get; set; }
+
+        /// <summary>
+        /// Processes only top-level unmanaged solution components. However returned delete dependencies are also returned managed ones.
+        /// </summary>
+        [Parameter()]
+        public SwitchParameter Unmanaged { get; set; }
+
+        SolutionManagementRepository solutionManagementRepository;
         #endregion
 
         #region Process Record
@@ -42,14 +52,21 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
 
             using (var context = new CIContext(OrganizationService))
             {
+                if (solutionManagementRepository == null)
+                {
+                    solutionManagementRepository = new SolutionManagementRepository(context);
+                }
                 var solutionId = GetSolutionId(context, SolutionName);
 
                 var solutionComponents = (from s in context.SolutionComponentSet
-                            where s.SolutionId == new EntityReference(Solution.EntityLogicalName, solutionId)
-                            orderby s.RootSolutionComponentId descending
-                            select s).ToList();
+                                          where s.SolutionId == new EntityReference(Solution.EntityLogicalName, solutionId)
+                                          orderby s.RootSolutionComponentId descending
+                                          select s).ToList();
 
-                solutionComponents.ForEach(x => WriteObject(x));
+                foreach (var solutionComponent in solutionComponents)
+                {
+                    WriteObject(solutionComponent);
+                }
             }
         }
 
@@ -70,5 +87,5 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         }
 
         #endregion
-    } 
+    }
 }

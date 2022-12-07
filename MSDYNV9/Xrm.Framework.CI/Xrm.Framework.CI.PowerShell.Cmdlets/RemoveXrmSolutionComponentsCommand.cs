@@ -142,7 +142,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             base.WriteVerbose($"Deleted component with Id : {objectId} and Type: {componentType}");
         }
 
-        public void DeleteObjectWithDependencies(Guid objectId, ComponentType? componentType, HashSet<string> deletingHashSet = null)
+        public void DeleteObjectWithDependencies(Guid objectId, ComponentType? componentType, HashSet<string> deletingHashSet = null, int depth = 0)
         {
             if (deletingHashSet == null)
             {
@@ -158,7 +158,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             Logger.LogVerbose($"Checking dependencies for {componentType} / {objectId}");
             foreach (var objectToDelete in solutionManagementRepository.GetDependeciesForDelete(objectId, componentType))
             {
-                DeleteObjectWithDependencies(objectToDelete.DependentComponentObjectId.Value, objectToDelete.DependentComponentTypeEnum, deletingHashSet);
+                DeleteObjectWithDependencies(objectToDelete.DependentComponentObjectId.Value, objectToDelete.DependentComponentTypeEnum, deletingHashSet, ++depth);
             }
 
             switch (componentType)
@@ -184,7 +184,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
                     if (!Unmanaged.IsPresent || (Unmanaged.IsPresent && !relationshipBase.IsManaged.Value))
                     {
                         Logger.LogVerbose($"Checking dependencies for {relationshipBase.RelationshipType} {relationshipBase.SchemaName} {objectId}");
-                        DeleteObjectWithDependencies(objectId, ComponentType.EntityRelationship, deletingHashSet);
+                        DeleteObjectWithDependencies(objectId, ComponentType.EntityRelationship, deletingHashSet, ++depth);
                         if (ShouldProcess($"{relationshipBase.RelationshipType} {relationshipBase.SchemaName}"))
                             OrganizationService.Execute(new DeleteRelationshipRequest()
                             {
@@ -215,7 +215,15 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
                     }
                     break;
                 case ComponentType.Workflow:
-                    var workflow = solutionManagementRepository.GetEntityById<Workflow>(objectId);
+                    var workflow = solutionManagementRepository.GetEntityById<Workflow>(objectId, x => new Workflow()
+                    {
+                        Name = x.Name,
+                        UniqueName = x.UniqueName,
+                        StateCode = x.StateCode,
+                        Category = x.Category,
+                        WorkflowId = x.WorkflowId,
+                        ["ismanaged"] = x.IsManaged,
+                    });
                     if (!Unmanaged.IsPresent || (Unmanaged.IsPresent && !workflow.IsManaged.Value))
                     {
                         if (workflow.StateCode == WorkflowState.Activated)
@@ -235,7 +243,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
                         {
                             var entityMetadata2 = OrganizationService.GetEntityMetadata(workflow.UniqueName);
                             Logger.LogVerbose($"Checking dependencies for BPF entity: {workflow.UniqueName}");
-                            DeleteObjectWithDependencies(entityMetadata2.MetadataId.Value, ComponentType.Entity, deletingHashSet);
+                            DeleteObjectWithDependencies(entityMetadata2.MetadataId.Value, ComponentType.Entity, deletingHashSet, ++depth);
                         }
 
                         if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
@@ -295,7 +303,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             try
             {
                 entity = solutionManagementRepository.GetEntityById<TEntity>(entityId);
-            } catch (InvalidOperationException ex)
+            } catch (InvalidOperationException)
             {
                 //Entity not found
                 Logger.LogWarning($"Entity {typeof(TEntity).Name} {entityId} not found, skipping");
