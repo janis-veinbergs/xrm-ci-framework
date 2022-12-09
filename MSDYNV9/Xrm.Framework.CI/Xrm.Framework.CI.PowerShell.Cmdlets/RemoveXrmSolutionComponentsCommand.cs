@@ -156,7 +156,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             deletingHashSet.Add(objectkey);
 
             Logger.LogVerbose($"Checking dependencies for {componentType} / {objectId}");
-            foreach (var objectToDelete in solutionManagementRepository.GetDependeciesForDelete(objectId, componentType))
+            foreach (var objectToDelete in solutionManagementRepository.GetDependeciesForDelete(objectId, componentType.Value))
             {
                 DeleteObjectWithDependencies(objectToDelete.DependentComponentObjectId.Value, objectToDelete.DependentComponentTypeEnum, deletingHashSet, ++depth);
             }

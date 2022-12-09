@@ -2,23 +2,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 using Xrm.Framework.CI.Common.Entities;
 
 namespace Xrm.Framework.CI.Common.Common
 {
-    public class SolutionComponentInfo
+    public class ComponentInfo
     {
 
         public string Name { get; set; }
         public string LogicalName { get; set; }
         public ComponentType ComponentType { get; set; }
-
-        public Guid SolutionId { get; set; }
-        public Guid SolutionComponentId { get; set; }
         public Guid ObjectId { get; set; }
-        public string SolutionName { get; set; }
         public bool? IsManaged { get; set; }
 
         /// <summary>
@@ -26,53 +23,51 @@ namespace Xrm.Framework.CI.Common.Common
         /// </summary>
         public SolutionInfo[] Solutions { get; set; }
 
-        public int Depth { get; set; }
-        /// <summary>
-        /// Which component has this component as a dependency for deletion
-        /// </summary>
-        public Guid? DeleteDependencyParentComponentId { get; set; }
+        ComponentInfo() {}
 
-        SolutionComponentInfo() {}
-
-
-        public static SolutionComponentInfo GetFromComponent(CIContext context, IOrganizationService service, SolutionComponent solutionComponent, string solutionName, int depth, Guid? parentComponentId = null)
+        public static ComponentInfo GetFromComponent(CIContext context, Guid objectId, ComponentType componentType)
         {
-            var result = new SolutionComponentInfo();
-            result.ComponentType = solutionComponent.ComponentTypeEnum.Value;
-            result.ObjectId = solutionComponent.ObjectId.Value;
-            result.SolutionName = solutionName;
-            result.SolutionId = solutionComponent.SolutionId.Id;
-            result.SolutionComponentId = solutionComponent.SolutionComponentId.Value;
-            result.Depth = depth;
-            result.DeleteDependencyParentComponentId = parentComponentId;
-
             var solutionManagementRepository = new SolutionManagementRepository(context);
-            var componentType = solutionComponent.ComponentTypeEnum.Value;
-            var objectId = solutionComponent.ObjectId.Value;
-            var details = GetComponentIsManagedAndFriendlyName(service, solutionManagementRepository, componentType, objectId);
-            result.IsManaged = details.isManaged;
-            result.Name = details.name;
-            result.LogicalName = details.logicalName;
-            result.Solutions = solutionManagementRepository.GetSolutionsContainingObject(solutionComponent.ObjectId.Value).Select(x => new SolutionInfo() { Name = x.UniqueName }).ToArray();
-
+            var result = new ComponentInfo()
+            {
+                ObjectId = objectId,
+                ComponentType = componentType,
+                Solutions = solutionManagementRepository.GetSolutionsContainingObject(objectId).Select(x => SolutionInfo.GetFromSolution(x)).ToArray()
+            };
+            try
+            {
+                var details = GetComponentDetails(context, componentType, objectId);
+                result.IsManaged = details.isManaged;
+                result.LogicalName = details.logicalName;
+                result.Name = details.name;
+            }
+            catch (InvalidOperationException)
+            {
+                //InvalidOperationException thrown when failing to retrieve entity by id. Unfortunately, some components may exist as Dependency but not be a valid component. At least OnPrem instance had SdkMessageProcessingStep as a dependency, but object by itsellf doesn't exist.
+            }
+            catch (FaultException<OrganizationServiceFault> ex) when (ex.Detail.ErrorDetails.TryGetValue("ApiOriginalExceptionKey", out object originalException) && (originalException as string).StartsWith("Microsoft.Crm.BusinessEntities.CrmObjectNotFoundException"))
+            {
+                //Some metadata couldn't be retrieved
+            }
             return result;
         }
 
-        private static (bool? isManaged, string name, string logicalName) GetComponentIsManagedAndFriendlyName(IOrganizationService service, SolutionManagementRepository solutionManagementRepository, ComponentType componentType, Guid objectId)
+        private static (bool? isManaged, string name, string logicalName) GetComponentDetails(CIContext context, ComponentType componentType, Guid objectId)
         {
+            var solutionManagementRepository = new SolutionManagementRepository(context);
             switch (componentType)
             {
                 case ComponentType.Attribute:
-                    var attributeMetadata = service.GetAttributeMetadata(objectId);
-                    return (attributeMetadata.IsManaged, $"{attributeMetadata.EntityLogicalName}: {attributeMetadata.LogicalName}", attributeMetadata.LogicalName);
+                    var attributeMetadata = context.GetAttributeMetadata(objectId);
+                    return (attributeMetadata.IsManaged, $"{attributeMetadata.LogicalName} ({attributeMetadata.EntityLogicalName})", attributeMetadata.LogicalName);
                 case ComponentType.Entity:
-                    var entityMetadata1 = service.GetEntityMetadata(objectId);
+                    var entityMetadata1 = context.GetEntityMetadata(objectId);
                     return (entityMetadata1.IsManaged, entityMetadata1.LogicalName, entityMetadata1.LogicalName);
                 case ComponentType.EntityRelationship:
-                    var relationshipBase = service.GetRelationshipMetadata(objectId);
-                    return (relationshipBase.IsManaged, $"{relationshipBase.RelationshipType} {relationshipBase.SchemaName}", relationshipBase.SchemaName);
+                    var relationshipBase = context.GetRelationshipMetadata(objectId);
+                    return (relationshipBase.IsManaged, $"{relationshipBase.SchemaName} ({relationshipBase.RelationshipType})", relationshipBase.SchemaName);
                 case ComponentType.OptionSet:
-                    var optionSetMetadata = service.GetOptionSetMetadata(objectId);
+                    var optionSetMetadata = context.GetOptionSetMetadata(objectId);
                     return (optionSetMetadata.IsManaged, optionSetMetadata.Name, optionSetMetadata.Name);
                 case ComponentType.Workflow:
                     var workflow = solutionManagementRepository.GetEntityById<Workflow>(objectId, x => new Workflow() { WorkflowId = x.WorkflowId, Name = x.Name, ["ismanaged"] = x.IsManaged });
@@ -105,8 +100,8 @@ namespace Xrm.Framework.CI.Common.Common
                     var serviceEndpoint = solutionManagementRepository.GetEntityById<ServiceEndpoint>(objectId, x => new ServiceEndpoint() { ServiceEndpointId = x.ServiceEndpointId, Name = x.Name, ["ismanaged"] = x.IsManaged });
                     return (serviceEndpoint.IsManaged, serviceEndpoint.Name, serviceEndpoint.LogicalName);
                 case ComponentType.SystemForm:
-                    var systemForm = solutionManagementRepository.GetEntityById<SystemForm>(objectId, x => new SystemForm() { FormId = x.FormId, Name = x.Name, ["ismanaged"] = x.IsManaged });
-                    return (systemForm.IsManaged, systemForm.Name, systemForm.LogicalName);
+                    var systemForm = solutionManagementRepository.GetEntityById<SystemForm>(objectId, x => new SystemForm() { FormId = x.FormId, Name = x.Name, ["type"] = x.Type, ["ismanaged"] = x.IsManaged });
+                    return (systemForm.IsManaged, $"{systemForm.Name} ({systemForm.TypeEnum})", systemForm.LogicalName);
                 case ComponentType.WebResource:
                     var webResource = solutionManagementRepository.GetEntityById<WebResource>(objectId, x => new WebResource() { WebResourceId = x.WebResourceId, Name = x.Name, ["ismanaged"] = x.IsManaged });
                     return (webResource.IsManaged, webResource.Name, webResource.LogicalName);
@@ -144,5 +139,7 @@ namespace Xrm.Framework.CI.Common.Common
                     return (null, $"{componentType} {objectId}", null);
             }
         }
+
+        public override string ToString() => $"{ComponentType}: {Name}";
     }
 }

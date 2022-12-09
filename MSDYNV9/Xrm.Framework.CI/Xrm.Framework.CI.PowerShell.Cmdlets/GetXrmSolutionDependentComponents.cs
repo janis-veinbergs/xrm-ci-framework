@@ -15,16 +15,19 @@ using Xrm.Framework.CI.PowerShell.Cmdlets.Common;
 namespace Xrm.Framework.CI.PowerShell.Cmdlets
 {
     /// <summary>
-    /// <para type="synopsis">Gets CRM Solution Components that could prevent deleting.</para>
-    /// <para type="description"></para>
+    /// <para type="synopsis">Returns a list of dependencies for solution components that directly depend on a solution component.</para>
+    /// <para type="description">
+    /// For example, when you use this message for a global option set solution component, dependency records for solution components representing any option set attributes that reference the global option set solution component are returned.
+    /// When you use this message for the solution component record for the account entity, dependency records for all of the solution components representing attributes, views, and forms used for that entity are returned.
+    /// </para>
     /// </summary>
     /// <example>
-    ///   <code>C:\PS>Get-XrmSolutionComponents -SolutionName "UniqueSolutionName" -ConnectionString "" | Get-XrmSolutionComponentsForDelete -ConnectionString ""</code>
-    ///   <para>Gets Solution components for delete that could prevent  prevent deleting a solution component</para>
+    ///   <code>C:\PS>Get-XrmSolutionComponents -SolutionName "UniqueSolutionName" -ConnectionString "" | Get-XrmSolutionDependentComponents -ConnectionString ""</code>
+    ///   <para>Returns a list of dependencies that directly depend on this solution component.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "XrmSolutionComponentsForDelete")]
+    [Cmdlet(VerbsCommon.Get, "XrmSolutionDependentComponents")]
     [OutputType(typeof(DependencyInfo))]
-    public class GetXrmSolutionComponentsForDeleteCommand : XrmCommandBase
+    public class GetXrmSolutionDependentComponentsCommand : XrmCommandBase
     {
         #region Parameters
 
@@ -40,9 +43,8 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         [Parameter(Mandatory = true, ValueFromPipeline = true, ParameterSetName = "SolutionComponent")]
         public SolutionComponent SolutionComponent { get; set; }
 
-
         /// <summary>
-        /// Get components for delete recursively
+        /// Get dependent components recursively
         /// </summary>
         [Parameter]
         public SwitchParameter Recursive { get; set; }
@@ -66,21 +68,18 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             solutionManagementRepository = new SolutionManagementRepository(context);
         }
 
-
         protected override void ProcessRecord()
         {
-            base.BeginProcessing();
             base.ProcessRecord();
-            base.WriteVerbose($"Getting Solution Components for Delete from {ComponentInfo?.Name ?? SolutionComponent?.Id.ToString()}");
+            base.WriteVerbose($"Getting Solution Dependent Components from {ComponentInfo?.Name ?? SolutionComponent?.Id.ToString()}");
 
             var objectId = SolutionComponent?.ObjectId ?? ComponentInfo.ObjectId;
             var componentType = SolutionComponent?.ComponentTypeEnum ?? ComponentInfo.ComponentType;
-            foreach (var x in GetDependenciesForDelete(context, objectId, componentType))
+            foreach (var x in GetDependentComponents(context, objectId, componentType))
             {
                 WriteObject(x);
             }
         }
-
         protected override void EndProcessing()
         {
             base.EndProcessing();
@@ -91,11 +90,11 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             }
         }
 
-        IEnumerable<DependencyInfo> GetDependenciesForDelete(CIContext context, Guid objectId, ComponentType componentType)
+        IEnumerable<DependencyInfo> GetDependentComponents(CIContext context, Guid objectId, ComponentType componentType)
         {
-            foreach (var dep in GetDependenciesForDeleteOrWarn(objectId, componentType))
+            foreach (var dep in GetDependentComponentsOrWarn(objectId, componentType))
             {
-                foreach (var item in GetDependenciesForDeleteRecursive(context, dep))
+                foreach (var item in GetDependentComponentsRecursive(context, dep))
                 {
                     yield return item;
                 }
@@ -104,7 +103,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             yield break;
         }
 
-        IEnumerable<DependencyInfo> GetDependenciesForDeleteRecursive(CIContext context, Dependency dependency, HashSet<string> processedHashSet = null, int depth = 1)
+        IEnumerable<DependencyInfo> GetDependentComponentsRecursive(CIContext context, Dependency dependency, HashSet<string> processedHashSet = null, int depth = 1)
         {
             if (processedHashSet == null)
             {
@@ -128,25 +127,25 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             }
             processedHashSet.Add(objectkey);
 
-            foreach (var childDependency in GetDependenciesForDeleteOrWarn(dependency.DependentComponentObjectId.Value, dependency.DependentComponentTypeEnum.Value))
+            foreach (var childDependency in GetDependentComponentsOrWarn(dependency.DependentComponentObjectId.Value, dependency.DependentComponentTypeEnum.Value))
             {
-                foreach (var x in GetDependenciesForDeleteRecursive(context, childDependency, processedHashSet, depth + 1))
+                foreach (var x in GetDependentComponentsRecursive(context, childDependency, processedHashSet, depth + 1))
                 {
                     yield return x;
                 }
             }
         }
 
-        IEnumerable<Dependency> GetDependenciesForDeleteOrWarn(Guid objectId, ComponentType componentType)
+        IEnumerable<Dependency> GetDependentComponentsOrWarn(Guid objectId, ComponentType componentType)
         {
             IEnumerable<Dependency> dependencies = null;
             try
             {
-                dependencies = solutionManagementRepository.GetDependeciesForDelete(objectId, componentType);
+                dependencies = solutionManagementRepository.GetDependentComponents(objectId, componentType);
             }
             catch (FaultException<OrganizationServiceFault> ex) when (ex.Detail.ErrorDetails.TryGetValue("ApiOriginalExceptionKey", out object originalException) && (originalException as string).StartsWith("Microsoft.Crm.BusinessEntities.CrmObjectNotFoundException"))
             {
-                WriteWarning($"Fault when retrieving dependent components for delete for component {componentType} {objectId}: {ex.Message}");
+                WriteWarning($"Fault when retrieving dependent components for component {componentType} {objectId}: {ex.Message}");
             }
             if (dependencies != null)
             {

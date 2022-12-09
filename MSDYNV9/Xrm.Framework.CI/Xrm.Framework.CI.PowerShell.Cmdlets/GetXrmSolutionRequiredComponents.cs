@@ -15,16 +15,16 @@ using Xrm.Framework.CI.PowerShell.Cmdlets.Common;
 namespace Xrm.Framework.CI.PowerShell.Cmdlets
 {
     /// <summary>
-    /// <para type="synopsis">Gets CRM Solution Components that could prevent deleting.</para>
-    /// <para type="description"></para>
+    /// <para type="synopsis">Gets CRM Solution Components that another solution component depends on.</para>
+    /// <para type="description">This is reverse of Get-XrmSolutionDependentComponents</para>
     /// </summary>
     /// <example>
-    ///   <code>C:\PS>Get-XrmSolutionComponents -SolutionName "UniqueSolutionName" -ConnectionString "" | Get-XrmSolutionComponentsForDelete -ConnectionString ""</code>
-    ///   <para>Gets Solution components for delete that could prevent  prevent deleting a solution component</para>
+    ///   <code>C:\PS>Get-XrmSolutionComponents -SolutionName "UniqueSolutionName" -ConnectionString "" | Get-XrmSolutionRequiredComponents -ConnectionString ""</code>
+    ///   <para>Returns a list of the dependencies for solution components that another solution component directly depends on</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "XrmSolutionComponentsForDelete")]
+    [Cmdlet(VerbsCommon.Get, "XrmSolutionRequiredComponents")]
     [OutputType(typeof(DependencyInfo))]
-    public class GetXrmSolutionComponentsForDeleteCommand : XrmCommandBase
+    public class GetXrmSolutionRequiredComponentsCommand : XrmCommandBase
     {
         #region Parameters
 
@@ -40,9 +40,8 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         [Parameter(Mandatory = true, ValueFromPipeline = true, ParameterSetName = "SolutionComponent")]
         public SolutionComponent SolutionComponent { get; set; }
 
-
         /// <summary>
-        /// Get components for delete recursively
+        /// Get required components recursively
         /// </summary>
         [Parameter]
         public SwitchParameter Recursive { get; set; }
@@ -66,16 +65,14 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             solutionManagementRepository = new SolutionManagementRepository(context);
         }
 
-
         protected override void ProcessRecord()
         {
-            base.BeginProcessing();
             base.ProcessRecord();
-            base.WriteVerbose($"Getting Solution Components for Delete from {ComponentInfo?.Name ?? SolutionComponent?.Id.ToString()}");
+            base.WriteVerbose($"Getting Solution Required Components from {ComponentInfo?.Name ?? SolutionComponent?.Id.ToString()}");
 
             var objectId = SolutionComponent?.ObjectId ?? ComponentInfo.ObjectId;
             var componentType = SolutionComponent?.ComponentTypeEnum ?? ComponentInfo.ComponentType;
-            foreach (var x in GetDependenciesForDelete(context, objectId, componentType))
+            foreach (var x in GetRequiredComponents(context, objectId, componentType))
             {
                 WriteObject(x);
             }
@@ -91,11 +88,11 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             }
         }
 
-        IEnumerable<DependencyInfo> GetDependenciesForDelete(CIContext context, Guid objectId, ComponentType componentType)
+        IEnumerable<DependencyInfo> GetRequiredComponents(CIContext context, Guid objectId, ComponentType componentType)
         {
-            foreach (var dep in GetDependenciesForDeleteOrWarn(objectId, componentType))
+            foreach (var dep in GetRequiredComponentsOrWarn(objectId, componentType))
             {
-                foreach (var item in GetDependenciesForDeleteRecursive(context, dep))
+                foreach (var item in GetRequiredComponentsRecursive(context, dep))
                 {
                     yield return item;
                 }
@@ -104,7 +101,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             yield break;
         }
 
-        IEnumerable<DependencyInfo> GetDependenciesForDeleteRecursive(CIContext context, Dependency dependency, HashSet<string> processedHashSet = null, int depth = 1)
+        IEnumerable<DependencyInfo> GetRequiredComponentsRecursive(CIContext context, Dependency dependency, HashSet<string> processedHashSet = null, int depth = 1)
         {
             if (processedHashSet == null)
             {
@@ -128,25 +125,25 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             }
             processedHashSet.Add(objectkey);
 
-            foreach (var childDependency in GetDependenciesForDeleteOrWarn(dependency.DependentComponentObjectId.Value, dependency.DependentComponentTypeEnum.Value))
+            foreach (var childDependency in GetRequiredComponentsOrWarn(dependency.RequiredComponentObjectId.Value, dependency.RequiredComponentTypeEnum.Value))
             {
-                foreach (var x in GetDependenciesForDeleteRecursive(context, childDependency, processedHashSet, depth + 1))
+                foreach (var x in GetRequiredComponentsRecursive(context, childDependency, processedHashSet, depth + 1))
                 {
                     yield return x;
                 }
             }
         }
 
-        IEnumerable<Dependency> GetDependenciesForDeleteOrWarn(Guid objectId, ComponentType componentType)
+        IEnumerable<Dependency> GetRequiredComponentsOrWarn(Guid objectId, ComponentType componentType)
         {
             IEnumerable<Dependency> dependencies = null;
             try
             {
-                dependencies = solutionManagementRepository.GetDependeciesForDelete(objectId, componentType);
+                dependencies = solutionManagementRepository.GetRequiredComponents(objectId, componentType);
             }
             catch (FaultException<OrganizationServiceFault> ex) when (ex.Detail.ErrorDetails.TryGetValue("ApiOriginalExceptionKey", out object originalException) && (originalException as string).StartsWith("Microsoft.Crm.BusinessEntities.CrmObjectNotFoundException"))
             {
-                WriteWarning($"Fault when retrieving dependent components for delete for component {componentType} {objectId}: {ex.Message}");
+                WriteWarning($"Fault when retrieving required components for component {componentType} {objectId}: {ex.Message}");
             }
             if (dependencies != null)
             {
@@ -157,7 +154,6 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             }
             yield break;
         }
-
         #endregion
     }
 }

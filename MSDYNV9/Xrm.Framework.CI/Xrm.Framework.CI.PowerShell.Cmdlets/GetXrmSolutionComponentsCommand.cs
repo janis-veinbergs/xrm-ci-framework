@@ -22,7 +22,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
     ///   <para>Gets UniqueSolutionName components</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "XrmSolutionComponents")]
-    [OutputType(typeof(SolutionComponentInfo))]
+    [OutputType(typeof(ComponentInfo))]
     public class GetXrmSolutionComponentsCommand : XrmCommandBase
     {
         #region Parameters
@@ -39,34 +39,44 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         [Parameter()]
         public SwitchParameter Unmanaged { get; set; }
 
+        CIContext context;
         SolutionManagementRepository solutionManagementRepository;
         #endregion
 
         #region Process Record
 
+        protected override void BeginProcessing()
+        {
+            base.BeginProcessing();
+            context = new CIContext(OrganizationService);
+            solutionManagementRepository = new SolutionManagementRepository(context);
+        }
+
         protected override void ProcessRecord()
         {
             base.ProcessRecord();
-
             base.WriteVerbose(string.Format("Getting Solution Components from {0}", SolutionName));
 
-            using (var context = new CIContext(OrganizationService))
+            var solutionId = GetSolutionId(context, SolutionName);
+            var solutionComponents = (from s in context.SolutionComponentSet
+                                        where s.SolutionId == new EntityReference(Solution.EntityLogicalName, solutionId)
+                                        orderby s.RootSolutionComponentId descending
+                                        select s).ToList();
+
+            foreach (var solutionComponent in solutionComponents)
             {
-                if (solutionManagementRepository == null)
-                {
-                    solutionManagementRepository = new SolutionManagementRepository(context);
-                }
-                var solutionId = GetSolutionId(context, SolutionName);
+                var componentInfo = ComponentInfo.GetFromComponent(context, solutionComponent.ObjectId.Value, solutionComponent.ComponentTypeEnum.Value);
+                WriteObject(componentInfo);
+            }
+        }
 
-                var solutionComponents = (from s in context.SolutionComponentSet
-                                          where s.SolutionId == new EntityReference(Solution.EntityLogicalName, solutionId)
-                                          orderby s.RootSolutionComponentId descending
-                                          select s).ToList();
-
-                foreach (var solutionComponent in solutionComponents)
-                {
-                    WriteObject(solutionComponent);
-                }
+        protected override void EndProcessing()
+        {
+            base.EndProcessing();
+            if (context != null)
+            {
+                context.Dispose();
+                context = null;
             }
         }
 

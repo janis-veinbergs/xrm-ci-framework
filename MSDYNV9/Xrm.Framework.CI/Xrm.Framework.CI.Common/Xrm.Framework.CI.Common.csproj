@@ -135,12 +135,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsyncOperationManager.cs" />
+    <Compile Include="Common\SolutionInfo.cs" />
+    <Compile Include="Common\DependencyInfo.cs" />
     <Compile Include="Common\ReflectionLoader.cs" />
-    <Compile Include="Common\SolutionComponentInfo.cs" />
+    <Compile Include="Common\ComponentInfo.cs" />
     <Compile Include="Common\XrmSolutionInfo.cs" />
     <Compile Include="Connections\ConnectionReferenceManager.cs" />
     <Compile Include="Data\ConfigurationMigrationManager.cs" />
     <Compile Include="Data\ConfigDataManager.cs" />
+    <Compile Include="Entities\CIContextExtended.cs" />
     <Compile Include="Entities\Entities.cs" />
     <Compile Include="Entities\OptionSets.cs" />
     <Compile Include="EnvironmentVariables\EnvironmentVariablesManager.cs" />

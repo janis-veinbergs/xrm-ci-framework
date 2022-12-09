@@ -129,7 +129,7 @@ namespace Xrm.Framework.CI.Common
             deletingHashSet.Add(objectkey);
 
             Logger.LogVerbose($"Checking dependencies for {componentType} / {objectId}");
-            foreach (var objectToDelete in solutionManagementRepository.GetDependeciesForDelete(objectId, componentType))
+            foreach (var objectToDelete in solutionManagementRepository.GetDependeciesForDelete(objectId, componentType.Value))
             {
                 DeleteObjectWithDependencies(objectToDelete.DependentComponentObjectId.Value, objectToDelete.DependentComponentTypeEnum, deletingHashSet);
             }

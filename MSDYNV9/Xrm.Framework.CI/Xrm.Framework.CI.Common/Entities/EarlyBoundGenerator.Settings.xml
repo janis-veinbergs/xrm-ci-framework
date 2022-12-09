@@ -23,42 +23,38 @@ saveappsetting</ActionsToSkip>
     <CreateOneFilePerOptionSet>false</CreateOneFilePerOptionSet>
     <DeleteFilesFromOutputFolders>false</DeleteFilesFromOutputFolders>
     <EntitiesToSkip />
-    <EntitiesWhitelist>
-      asyncoperation|
-      bulkdeleteoperation|
-      connectionrole|
-      connectionreference|
-      contracttemplate|
-      customcontrol|
-      dependency|
-      duplicaterule|
-      environmentvariabledefinition|
-      environmentvariablevalue|
-      fieldsecurityprofile|
-      importjob|
-      kbarticletemplate|
-      mailmergetemplate|
-      mobileofflineprofile|
-      pluginassembly|
-      plugintype|
-      report|
-      ribboncustomization|
-      role|
-      savedquery|
-      sdkmessage|
-      sdkmessagefilter|
-      sdkmessageprocessingstep|
-      sdkmessageprocessingstepimage|
-      serviceendpoint|
-      sitemap|
-      systemform|
-      systemuser|
-      sla|
-      solution|
-      solutioncomponent|
-      template|
-      webresource|
-      workflow</EntitiesWhitelist>
+    <EntitiesWhitelist>asyncoperation|
+bulkdeleteoperation|
+connectionrole|
+contracttemplate|
+customcontrol|
+dependency|
+duplicaterule|
+fieldsecurityprofile|
+importjob|
+kbarticletemplate|
+mailmergetemplate|
+mobileofflineprofile|
+pluginassembly|
+plugintype|
+report|
+ribboncustomization|
+role|
+savedquery|
+sdkmessage|
+sdkmessagefilter|
+sdkmessageprocessingstep|
+sdkmessageprocessingstepimage|
+serviceendpoint|
+sitemap|
+systemform|
+systemuser|
+sla|
+solution|
+solutioncomponent|
+template|
+webresource|
+workflow</EntitiesWhitelist>
     <EntityAttributeSpecifiedNames />
     <EntityPrefixesToSkip />
     <EntityPrefixesWhitelist />

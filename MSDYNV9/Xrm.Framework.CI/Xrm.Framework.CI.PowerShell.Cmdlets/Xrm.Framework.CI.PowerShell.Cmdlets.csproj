@@ -147,6 +147,8 @@
     <Compile Include="AddXrmSolution.cs" />
     <Compile Include="AddXrmSolutionPatch.cs" />
     <Compile Include="CompressXrmCMData.cs" />
+    <Compile Include="GetXrmSolutionRequiredComponents.cs" />
+    <Compile Include="GetXrmSolutionDependentComponents.cs" />
     <Compile Include="GetXrmSolutionComponentsForDelete.cs" />
     <Compile Include="GetXrmSolutionComponentsCommand.cs" />
     <Compile Include="ExpandXrmCMData.cs" />
