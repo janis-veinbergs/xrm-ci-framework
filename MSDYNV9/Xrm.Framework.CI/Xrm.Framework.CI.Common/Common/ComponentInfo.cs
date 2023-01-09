@@ -18,6 +18,8 @@ namespace Xrm.Framework.CI.Common.Common
         public Guid ObjectId { get; set; }
         public bool? IsManaged { get; set; }
 
+        public bool IsMetadata { get; set; }
+
         /// <summary>
         /// In which solutions this item is present
         /// </summary>
@@ -49,6 +51,24 @@ namespace Xrm.Framework.CI.Common.Common
             {
                 //Some metadata couldn't be retrieved
             }
+
+            switch (result.ComponentType) {
+                case ComponentType.Entity:
+                case ComponentType.Attribute:
+                case ComponentType.Relationship:
+                case ComponentType.LocalizedLabel:
+                case ComponentType.RelationshipExtraCondition:
+                case ComponentType.OptionSet:
+                case ComponentType.EntityRelationship:
+                case ComponentType.ManagedProperty:
+                case ComponentType.EntityKey:
+                    result.IsMetadata = true;
+                    break;
+                default:
+                    result.IsMetadata = false;
+                    break;
+            }
+
             return result;
         }
 

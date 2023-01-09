@@ -11,6 +11,7 @@ using System.Xml.XPath;
 using Xrm.Framework.CI.Common;
 using Xrm.Framework.CI.Common.Entities;
 using System.Reflection;
+using Xrm.Framework.CI.Common.Common;
 
 namespace Xrm.Framework.CI.PowerShell.Cmdlets
 {
@@ -43,19 +44,13 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         [Parameter(ParameterSetName = DeleteParameterSetName)]
         public SwitchParameter Delete { get; set; }
 
+
         /// <summary>
         /// Removes only single solution component.
         /// </summary>
         [Parameter(ParameterSetName = RemoveParameterSetName, ValueFromPipeline = true, Mandatory = false)]
         [Parameter(ParameterSetName = DeleteParameterSetName, ValueFromPipeline = true, Mandatory = true)]
-        public SolutionComponent SolutionComponent { get; set; }
-
-        /// <summary>
-        /// Only will process unmanaged components. That is, managed ones will be skipped.
-        /// </summary>
-        [Parameter(ParameterSetName = RemoveParameterSetName, Mandatory = false)]
-        [Parameter(ParameterSetName = DeleteParameterSetName, Mandatory = false)]
-        public SwitchParameter Unmanaged { get; set; }
+        public ComponentInfo ComponentInfo { get; set; }
         #endregion
 
         CIContext context;
@@ -79,12 +74,12 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
 
             if (Delete.IsPresent)
             {
-                ProcessDelete(SolutionComponent.ObjectId.Value, (ComponentType)SolutionComponent.ComponentType.Value);
+                ProcessDelete(ComponentInfo.ObjectId, ComponentInfo.ComponentType);
             } else
             {
                 Guid solutionId = GetSolutionId(context);
 
-                if (SolutionComponent == null)
+                if (ComponentInfo == null)
                 {
                     base.WriteVerbose($"Removing all components from solution with Id : {solutionId}");
                     var querySolutionComponents = from s in context.SolutionComponentSet
@@ -94,9 +89,9 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
                 }
                 else
                 {
-                    base.WriteVerbose($"Removing component {SolutionComponent.ObjectId} and Type: {(ComponentType)SolutionComponent.ComponentType.Value} from solution with Id : {solutionId}");
+                    base.WriteVerbose($"Removing component {ComponentInfo.ObjectId} and Type: {ComponentInfo.ComponentType} from solution with Id : {solutionId}");
                     var queryOneSolutionComponent = from s in context.SolutionComponentSet
-                                                    where s.SolutionId == new EntityReference(Solution.EntityLogicalName, solutionId) && s.ObjectId == SolutionComponent.ObjectId
+                                                    where s.SolutionId == new EntityReference(Solution.EntityLogicalName, solutionId) && s.ObjectId == ComponentInfo.ObjectId
                                                     select new { s.ComponentType, s.ObjectId };
                     var solutionComponent = queryOneSolutionComponent.FirstOrDefault();
                     if (solutionComponent != null)
@@ -105,7 +100,7 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
                     }
                     else
                     {
-                        WriteWarning($"Component {SolutionComponent.ObjectId} {(ComponentType)SolutionComponent.ComponentType.Value} not found within solution with Id : {solutionId}");
+                        WriteWarning($"Component {ComponentInfo.ObjectId} {ComponentInfo.ComponentType} not found within solution with Id : {solutionId}");
                     }
                 }
             }
@@ -138,158 +133,120 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         void ProcessDelete(Guid objectId, ComponentType componentType)
         {
             if (!Delete.IsPresent) { throw new InvalidOperationException($"{nameof(ProcessDelete)} not callable without {nameof(Delete)} switch parameter set"); }
-            DeleteObjectWithDependencies(objectId, componentType);
+            DeleteObject(ComponentInfo.GetFromComponent(context, objectId, componentType));
             base.WriteVerbose($"Deleted component with Id : {objectId} and Type: {componentType}");
         }
 
-        public void DeleteObjectWithDependencies(Guid objectId, ComponentType? componentType, HashSet<string> deletingHashSet = null, int depth = 0)
+        public void DeleteObject(ComponentInfo component)
         {
-            if (deletingHashSet == null)
-            {
-                deletingHashSet = new HashSet<string>();
-            }
-            var objectkey = $"{componentType}{objectId}";
-            if (deletingHashSet.Contains(objectkey))
-            {
-                return;
-            }
-            deletingHashSet.Add(objectkey);
-
-            Logger.LogVerbose($"Checking dependencies for {componentType} / {objectId}");
-            foreach (var objectToDelete in solutionManagementRepository.GetDependeciesForDelete(objectId, componentType.Value))
-            {
-                DeleteObjectWithDependencies(objectToDelete.DependentComponentObjectId.Value, objectToDelete.DependentComponentTypeEnum, deletingHashSet, ++depth);
-            }
+            Guid objectId = component.ObjectId;
+            ComponentType componentType = component.ComponentType;
 
             switch (componentType)
             {
                 case ComponentType.Entity:
                     var entityMetadata1 = OrganizationService.GetEntityMetadata(objectId);
-                    if (!Unmanaged.IsPresent || (Unmanaged.IsPresent && !entityMetadata1.IsManaged.Value))
+                    if (ShouldProcess($"{componentType} {entityMetadata1.LogicalName} {objectId}"))
                     {
-                        if (ShouldProcess($"{componentType} {entityMetadata1.LogicalName} {objectId}"))
-                        {
-                            Logger.LogVerbose($"Trying to delete {componentType} {entityMetadata1.LogicalName} {objectId}");
-                            OrganizationService.Execute(new DeleteEntityRequest { LogicalName = entityMetadata1.LogicalName });
-                        }
-                    }
-                    else
-                    {
-                        Logger.LogInformation($"Skipping Managed {componentType} {entityMetadata1.LogicalName} {objectId}");
+                        Logger.LogVerbose($"Trying to delete {componentType} {entityMetadata1.LogicalName} {objectId}");
+                        OrganizationService.Execute(new DeleteEntityRequest { LogicalName = entityMetadata1.LogicalName });
                     }
                     break;
                 case ComponentType.EntityRelationship:
                     Logger.LogVerbose($"Trying to delete {nameof(ComponentType.EntityRelationship)} {componentType} {objectId}");
                     var relationshipBase = OrganizationService.GetRelationshipMetadata(objectId);
-                    if (!Unmanaged.IsPresent || (Unmanaged.IsPresent && !relationshipBase.IsManaged.Value))
-                    {
-                        Logger.LogVerbose($"Checking dependencies for {relationshipBase.RelationshipType} {relationshipBase.SchemaName} {objectId}");
-                        DeleteObjectWithDependencies(objectId, ComponentType.EntityRelationship, deletingHashSet, ++depth);
-                        if (ShouldProcess($"{relationshipBase.RelationshipType} {relationshipBase.SchemaName}"))
-                            OrganizationService.Execute(new DeleteRelationshipRequest()
-                            {
-                                Name = relationshipBase.SchemaName
-                            });
-                    }
-                    else
-                    {
-                        Logger.LogInformation($"Skipping Managed {componentType} {relationshipBase.RelationshipType}: {relationshipBase.SchemaName} {objectId}");
-                    }
+                    if (ShouldProcess($"{relationshipBase.RelationshipType} {relationshipBase.SchemaName}"))
+                        OrganizationService.Execute(new DeleteRelationshipRequest()
+                        {
+                            Name = relationshipBase.SchemaName
+                        });
                     break;
                 case ComponentType.OptionSet:
                     var optionSetMetadata = solutionManagementRepository.GetOptionSetMetadata(objectId);
-                    if (!Unmanaged.IsPresent || (Unmanaged.IsPresent && !optionSetMetadata.IsManaged.Value))
+                    Logger.LogVerbose($"Deleting {nameof(componentType)} {optionSetMetadata.Name} {objectId}");
+                    if (ShouldProcess($"OptionSet {optionSetMetadata.Name}"))
                     {
-                        Logger.LogVerbose($"Deleting {nameof(componentType)} {optionSetMetadata.Name} {objectId}");
-                        if (ShouldProcess($"OptionSet {optionSetMetadata.Name}"))
+                        OrganizationService.Execute(new DeleteOptionSetRequest()
                         {
-                            OrganizationService.Execute(new DeleteOptionSetRequest()
-                            {
-                                Name = optionSetMetadata.Name
-                            });
-                        }
-                    }
-                    else
-                    {
-                        Logger.LogInformation($"Skipping Managed {nameof(componentType)} {optionSetMetadata.Name} {objectId}");
+                            Name = optionSetMetadata.Name
+                        });
                     }
                     break;
                 case ComponentType.Workflow:
-                    var workflow = solutionManagementRepository.GetEntityById<Workflow>(objectId, x => new Workflow()
+                    Workflow workflow = null;
+                    try
                     {
-                        Name = x.Name,
-                        UniqueName = x.UniqueName,
-                        StateCode = x.StateCode,
-                        Category = x.Category,
-                        WorkflowId = x.WorkflowId,
-                        ["ismanaged"] = x.IsManaged,
-                    });
-                    if (!Unmanaged.IsPresent || (Unmanaged.IsPresent && !workflow.IsManaged.Value))
+                        workflow = solutionManagementRepository.GetEntityById<Workflow>(objectId, x => new Workflow()
+                        {
+                            Name = x.Name,
+                            UniqueName = x.UniqueName,
+                            StateCode = x.StateCode,
+                            Category = x.Category,
+                            WorkflowId = x.WorkflowId,
+                            ["ismanaged"] = x.IsManaged,
+                        });
+                    } catch (InvalidOperationException ex)
                     {
-                        if (workflow.StateCode == WorkflowState.Activated)
+                        WriteError(new ErrorRecord(ex, ex.Source, ErrorCategory.InvalidOperation, component));
+                    }
+                    if (workflow.StateCode == WorkflowState.Activated)
+                    {
+                        Logger.LogVerbose($"Unpublishing workflow {workflow.Name}");
+                        if (ShouldProcess($"Deactivate {workflow.Name}"))
                         {
-                            Logger.LogVerbose($"Unpublishing workflow {workflow.Name}");
-                            if (ShouldProcess($"Deactivate {workflow.Name}"))
+                            OrganizationService.Execute(new SetStateRequest
                             {
-                                OrganizationService.Execute(new SetStateRequest
-                                {
-                                    EntityMoniker = workflow.ToEntityReference(),
-                                    State = new OptionSetValue((int)WorkflowState.Draft),
-                                    Status = new OptionSetValue((int)Workflow_StatusCode.Draft)
-                                });
-                            }
-                        }
-                        if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
-                        {
-                            var entityMetadata2 = OrganizationService.GetEntityMetadata(workflow.UniqueName);
-                            Logger.LogVerbose($"Checking dependencies for BPF entity: {workflow.UniqueName}");
-                            DeleteObjectWithDependencies(entityMetadata2.MetadataId.Value, ComponentType.Entity, deletingHashSet, ++depth);
-                        }
-
-                        if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
-                        {
-                            if (ShouldProcess($"Business Process Flow {workflow.Name}"))
-                            {
-                                RemoveAllWorkflowsFromBpf(workflow);
-                            }
-                            Logger.LogVerbose($"Preserving BPF {workflow.Name}");
-                            return;
-                        }
-
-                        Logger.LogVerbose($"Trying to delete {componentType} {workflow.Name}");
-                        if (ShouldProcess(GetEntityComponentName(workflow)))
-                        {
-                            OrganizationService.Delete(Workflow.EntityLogicalName, objectId);
+                                EntityMoniker = workflow.ToEntityReference(),
+                                State = new OptionSetValue((int)WorkflowState.Draft),
+                                Status = new OptionSetValue((int)Workflow_StatusCode.Draft)
+                            });
                         }
                     }
-                    else
+                    if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
                     {
-                        Logger.LogInformation($"Skipping Managed {nameof(componentType)} {workflow.Name} {objectId}");
+                        var entityMetadata2 = OrganizationService.GetEntityMetadata(workflow.UniqueName);
+                        Logger.LogVerbose($"Checking dependencies for BPF entity: {workflow.UniqueName}");
+                        DeleteObject(ComponentInfo.GetFromComponent(context, entityMetadata2.MetadataId.Value, ComponentType.Entity));
+                    }
+
+                    if (workflow.CategoryEnum == Workflow_Category.BusinessProcessFlow)
+                    {
+                        if (ShouldProcess($"Business Process Flow {workflow.Name}"))
+                        {
+                            RemoveAllWorkflowsFromBpf(workflow);
+                        }
+                        Logger.LogVerbose($"Preserving BPF {workflow.Name}");
+                        return;
+                    }
+
+                    Logger.LogVerbose($"Trying to delete {componentType} {workflow.Name}");
+                    if (ShouldProcess(ComponentInfo.Name))
+                    {
+                        OrganizationService.Delete(Workflow.EntityLogicalName, objectId);
                     }
                     break;
                 case ComponentType.ConnectionRole:
-                    DeleteEntityObject<ConnectionRole>(objectId);
-                    break;
+                case ComponentType.SDKMessage:
                 case ComponentType.SDKMessageProcessingStep:
-                    DeleteEntityObject<SdkMessageProcessingStep>(objectId);
-                    break;
                 case ComponentType.SDKMessageProcessingStepImage:
-                    DeleteEntityObject<SdkMessageProcessingStepImage>(objectId);
-                    break;
                 case ComponentType.PluginType:
-                    DeleteEntityObject<PluginType>(objectId);
-                    break;
                 case ComponentType.PluginAssembly:
-                    DeleteEntityObject<PluginAssembly>(objectId);
-                    break;
-                case ComponentType.ServiceEndpoint:
-                    DeleteEntityObject<ServiceEndpoint>(objectId);
-                    break;
+                case ComponentType.Role:
                 case ComponentType.SavedQuery:
-                    DeleteEntityObject<SavedQuery>(objectId);
-                    break;
+                case ComponentType.ServiceEndpoint:
+                case ComponentType.SystemForm:
                 case ComponentType.WebResource:
-                    DeleteEntityObject<WebResource>(objectId);
+                case ComponentType.Report:
+                case ComponentType.ContractTemplate:
+                case ComponentType.EmailTemplate:
+                case ComponentType.KBArticleTemplate:
+                case ComponentType.RibbonCustomization:
+                case ComponentType.SiteMap:
+                case ComponentType.MailMergeTemplate:
+                case ComponentType.SLA:
+                case ComponentType.CustomControl:
+                case ComponentType.FieldSecurityProfile:
+                    DeleteEntityObject(component);
                     break;
                 default:
                     Logger.LogWarning($"Cannot delete {componentType} {objectId}: Delete for component type not implemented.");
@@ -297,48 +254,21 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
             }
         }
 
-        private void DeleteEntityObject<TEntity>(Guid entityId) where TEntity: Entity
+        private void DeleteEntityObject(ComponentInfo component)
         {
-            Entity entity;
-            try
+            if (component.LogicalName == null)
             {
-                entity = solutionManagementRepository.GetEntityById<TEntity>(entityId);
-            } catch (InvalidOperationException)
-            {
-                //Entity not found
-                Logger.LogWarning($"Entity {typeof(TEntity).Name} {entityId} not found, skipping");
-                return;
+                throw new ArgumentException($"Component {component} has empty {nameof(component.LogicalName)}"); ;
             }
-            var componentName = GetEntityComponentName(entity);
-            if (ShouldProcess(componentName))
+            if (ShouldProcess(component.Name))
             {
-                Logger.LogVerbose($"Deleting {componentName}");
-                OrganizationService.Delete(entity.LogicalName, entity.Id);
-            } else
-            {
-                Logger.LogInformation($"Skipping {componentName}");
+                Logger.LogVerbose($"Deleting {component}");
+                OrganizationService.Delete(component.LogicalName, component.ObjectId);
             }
-        }
-
-        bool ShouldProcessEntityComponent<T>(T entity) where T : Entity => Unmanaged.IsPresent && entity.TryGetAttributeValue("ismanaged", out bool isManaged) && !isManaged && ShouldProcess(GetEntityComponentName(entity));
-
-        string GetEntityComponentName<T>(T entity) where T : Entity => $"{entity.LogicalName} \"{GetEntityPrimaryNameFieldValue(entity)}\" {entity.Id}";
-
-        string GetEntityPrimaryNameFieldValue<T>(T entity) where T : Entity
-        {
-            string primaryNameAttribute;
-            try
+            else
             {
-                primaryNameAttribute = (string)entity.GetType().GetField("PrimaryNameAttribute").GetValue(entity);
-                if (primaryNameAttribute == null)
-                {
-                    return "";
-                }
-            } catch 
-            {
-                return "";
+                Logger.LogInformation($"Skipping {component}");
             }
-            return entity.GetAttributeValue<string>(primaryNameAttribute);
         }
 
         void ProcessRemove(Guid componentId, OptionSetValue componentType)
