@@ -21,8 +21,9 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
     ///   <code>C:\PS>Get-XrmSolutionComponents -ConnectionString "" -SolutionName "UniqueSolutionName"</code>
     ///   <para>Gets UniqueSolutionName components</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "XrmSolutionComponents")]
-    [OutputType(typeof(ComponentInfo))]
+    [Cmdlet(VerbsCommon.Get, "XrmSolutionComponents", DefaultParameterSetName = "SolutionComponent")]
+    [OutputType(typeof(SolutionComponent), ParameterSetName = new[] { "SolutionComponent" })]
+    [OutputType(typeof(ComponentInfo), ParameterSetName = new[] { "ComponentInfo" })]
     public class GetXrmSolutionComponentsCommand : XrmCommandBase
     {
         #region Parameters
@@ -30,14 +31,22 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
         /// <summary>
         /// <para type="description">The unique name of the solution to get component froms.</para>
         /// </summary>
-        [Parameter(Mandatory = true)]
+        [Parameter(Mandatory = true, ParameterSetName = "SolutionComponent")]
+        [Parameter(Mandatory = true, ParameterSetName = "ComponentInfo")]
         public string SolutionName { get; set; }
 
         /// <summary>
         /// Processes only top-level unmanaged solution components. However returned delete dependencies are also returned managed ones.
         /// </summary>
-        [Parameter()]
+        [Parameter(ParameterSetName = "SolutionComponent")]
+        [Parameter(ParameterSetName = "ComponentInfo")]
         public SwitchParameter Unmanaged { get; set; }
+
+        /// <summary>
+        /// Get result as <see cref="ComponentInfo"/>. Without this switch, it is outputted as <see cref="SolutionComponent"/> entity.
+        /// </summary>
+        [Parameter(ParameterSetName = "ComponentInfo")]
+        public SwitchParameter AsComponentInfo { get; set; }
 
         CIContext context;
         SolutionManagementRepository solutionManagementRepository;
@@ -65,8 +74,14 @@ namespace Xrm.Framework.CI.PowerShell.Cmdlets
 
             foreach (var solutionComponent in solutionComponents)
             {
-                var componentInfo = ComponentInfo.GetFromComponent(context, solutionComponent.ObjectId.Value, solutionComponent.ComponentTypeEnum.Value);
-                WriteObject(componentInfo);
+                if (AsComponentInfo.IsPresent)
+                {
+                    var componentInfo = ComponentInfo.GetFromComponent(context, solutionComponent.ObjectId.Value, solutionComponent.ComponentTypeEnum.Value);
+                    WriteObject(componentInfo);
+                } else
+                {
+                    WriteObject(solutionComponent);
+                }
             }
         }
 
